@@ -18,8 +18,9 @@ class Interface{
     const std::string actions[5] = { "Attack", "Defend", "Spell", "Item", "Summon" };
     const int NUM_ACTIONS = sizeof(actions) / sizeof(actions[0]);
 
-    void clearScreen(){
-        std::cout << "\033[2J\033[H"; 
+    void clearScreen() {
+        std::cout << "\033[2J\033[H";
+        std::cout.flush();
     }
 
     void attack(){
