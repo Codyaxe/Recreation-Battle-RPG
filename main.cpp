@@ -1,6 +1,4 @@
 #include <iostream>
-#include <string>
-#include <map>
 #include "technical.h"
 
 //Using Windows Console API, Starting From Scratch

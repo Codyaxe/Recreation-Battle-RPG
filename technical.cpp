@@ -1,4 +1,5 @@
 #include "technical.h"
+#include "character.h"
 
 const std::string RESET = "\033[0m";
 const std::string HIGHLIGHT = "\033[47;30m";
@@ -10,6 +11,38 @@ void clearScreen() {
     std::cout << "\033[2J\033[H";
     std::cout.flush();
 }
+
+Game::Game(){
+    for(int i = 0; i < 6; i++){
+        enemyField.push_back(Enemy());
+    }
+}
+
+Game::~Game(){
+
+}
+
+void Game::attack(){
+
+};
+
+void Game::defend(){
+
+};
+
+void Game::spell(){
+
+};
+
+void Game::item(){
+
+};
+
+void Game::summon(){
+
+};
+
+
 
 void displayTargetMenu(int iter, int selectedIndex, std::vector<Character>& targetInv, const std::string& name, const int& type) {
 
@@ -199,104 +232,72 @@ std::vector<int> chooseTarget(std::vector<Character>& targetInv, std::string& na
     return targets;
 };
 
-class Interface{
 
-    public:
-
-    HANDLE hOut;
-    HANDLE hIn;
-    DWORD originalOutMode, originalInMode; 
-
-    bool enableFlags() {
-        hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-        hIn = GetStdHandle(STD_INPUT_HANDLE);
-        
-       
-        if (!GetConsoleMode(hOut, &originalOutMode)) {
-            std::cerr << "Failed to get console output mode.\n";
-            return false;
-        }
-
-        if (!GetConsoleMode(hIn, &originalInMode)) {
-            std::cerr << "Failed to get console input mode.\n";
-            return false;
-        }
-
-        DWORD outMode = originalOutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        
-        DWORD inMode = originalInMode | ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT;
-
-        if (!SetConsoleMode(hOut, outMode)) {
-            std::cerr << "Failed to set console output mode.\n";
-            return false;
-        }
-
-        if (!SetConsoleMode(hIn, inMode)) {
-            std::cerr << "Failed to set console input mode.\n";
-            return false;
-        }
-        
-        return true;
+bool Interface::enableFlags() {
+    hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    hIn = GetStdHandle(STD_INPUT_HANDLE);
+    
+    
+    if (!GetConsoleMode(hOut, &originalOutMode)) {
+        std::cerr << "Failed to get console output mode.\n";
+        return false;
     }
 
-    void restoreConsoleMode() {
-        SetConsoleMode(hOut, originalOutMode);
-        SetConsoleMode(hIn, originalInMode);
+    if (!GetConsoleMode(hIn, &originalInMode)) {
+        std::cerr << "Failed to get console input mode.\n";
+        return false;
     }
 
-    public:
+    DWORD outMode = originalOutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    
+    DWORD inMode = originalInMode | ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT;
 
-    Interface(){
-        hIn = GetStdHandle(STD_INPUT_HANDLE);
-        hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-
-        if (hIn == INVALID_HANDLE_VALUE || hOut == INVALID_HANDLE_VALUE) {
-            std::cerr << "Invalid console handles.\n";
-            std::exit(1);
-        }
-        
-        if (!enableFlags()) {
-            std::cerr << "Failed to enable console flags.\n";
-            std::exit(1);
-        }
+    if (!SetConsoleMode(hOut, outMode)) {
+        std::cerr << "Failed to set console output mode.\n";
+        return false;
     }
 
-    ~Interface() {
-        restoreConsoleMode();
+    if (!SetConsoleMode(hIn, inMode)) {
+        std::cerr << "Failed to set console input mode.\n";
+        return false;
     }
+    
+    return true;
+}
 
-    void start(){
-        SetConsoleTitleW(L"Battle RPG");
-        Game game;
-        menu(*this);
+void Interface::restoreConsoleMode() {
+    SetConsoleMode(hOut, originalOutMode);
+    SetConsoleMode(hIn, originalInMode);
+}
+
+Interface::Interface(){
+    hIn = GetStdHandle(STD_INPUT_HANDLE);
+    hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    if (hIn == INVALID_HANDLE_VALUE || hOut == INVALID_HANDLE_VALUE) {
+        std::cerr << "Invalid console handles.\n";
+        std::exit(1);
     }
+    
+    if (!enableFlags()) {
+        std::cerr << "Failed to enable console flags.\n";
+        std::exit(1);
+    }
+}
 
-    friend void menu(const Interface& interface_);
+Interface::~Interface() {
+    restoreConsoleMode();
+}
+
+void Interface::start(){
+    SetConsoleTitleW(L"Battle RPG");
+    Game game;
+    menu(*this);
+}
+
+    
 
 
 
-};
 
-class Game{
-    public:
 
-    std::vector<Enemy> enemyField;
-
-    void attack(){
-
-    };
-
-    void defend(){
-
-    };
-    void spell(){
-
-    };
-    void item(){
-
-    };
-
-    void summon(){
-
-    };
-};

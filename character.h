@@ -4,8 +4,8 @@
 #include <map>
 #include <memory>
 #include <string>
+#include "spells.h"
 
-class Spell;
 class Attack;
 class Summon;
 class Item;
@@ -40,8 +40,6 @@ class Player : public Character{
     int shield;
     int barrier;
     int armor;
-
-
 
 };
 

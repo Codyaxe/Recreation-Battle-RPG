@@ -3,8 +3,7 @@
 
 #include <string>
 #include <functional>
-
-class Character;
+#include "character.h"
 
 using EffectFunction = std::function<void(Character&)>;
 
