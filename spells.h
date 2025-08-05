@@ -10,17 +10,17 @@ using EffectFunction = std::function<void(Character&)>;
 
 class Spell{
 
-    private:
+    public:
 
     std::string name_;
     std::string description_;
-    std::vector<EffectFunction> effect_;
 
-    public:
+    Spell(std::string& name, std::string& description) : 
+    name_(name), description_(description)
+    {}
 
-    Spell(std::string& name, std::string& description, std::vector<EffectFunction> effect);
-
-    virtual void cast(Character& target) = 0;
+    virtual void effect(std::vector<Character>& targetInv) = 0;
+    virtual void operator()(std::vector<Character>& targetInv) = 0;
 
 };
 

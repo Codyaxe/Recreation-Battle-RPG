@@ -1,27 +1,38 @@
+#include "spells.h"
+#include "spelleffects.h"
+#include "technical.h"
 
+// class Spell{
 
-#include <string>
-#include <functional>
+//     private:
 
-class Character;
+//     std::string name_;
+//     std::string description_;
+//     EffectFunction effect_;
 
-using EffectFunction = std::function<void(Character&)>;
+//     
 
-class Spell{
+//     Spell(std::string& name, std::string& description) : 
+//     name_(name), description_(description), effect_(effect)
+//     {}
 
-    private:
+//     virtual void effect(Character& target) = 0;
 
-    std::string name_;
-    std::string description_;
-    EffectFunction effect_;
+// };
 
-    public:
+class Fireball : public Spell {
 
-    Spell(std::string& name, std::string& description, EffectFunction effect) : 
-    name_(name), description_(description), effect_(effect)
+    Fireball(std::string& name, std::string& description) : 
+    Spell(name, description)
     {}
 
-    void cast(Character& target);
+    void effect(std::vector<Character>& targetInv) override {
+        std::vector<int> targets = chooseTarget(targetInv, name_, 1);
+        applyDamage(targetInv[targets[0]], 150, FIRE);
+    }
+
+    void operator()(std::vector<Character>& targetInv){
+        effect(targetInv);
+    }
 
 };
-

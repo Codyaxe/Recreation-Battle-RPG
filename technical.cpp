@@ -5,6 +5,7 @@ const std::string HIGHLIGHT = "\033[47;30m";
 const std::string actions[5] = { "Attack", "Defend", "Spell", "Item", "Summon" };
 const int NUM_ACTIONS = sizeof(actions) / sizeof(actions[0]);
 
+
 void clearScreen() {
     std::cout << "\033[2J\033[H";
     std::cout.flush();
@@ -56,7 +57,7 @@ void displayMenu(int selectedIndex, bool resetDisplay = true) {
     std::cout.flush(); 
 }
 
-void menu(const Interface& interface_){
+void menu(const Interface& interface_, Game& game){
     int count = 0;
     displayMenu(count);
     
@@ -92,22 +93,27 @@ void menu(const Interface& interface_){
                         switch (count) {
                             case 0:
                                 std::cout << "Attack selected!\n";
+                                game.attack();
                                 Sleep(1000);
                                 break;
                             case 1: 
                                 std::cout << "Defend selected!\n";
+                                game.defend();
                                 Sleep(1000);
                                 break;
                             case 2: 
                                 std::cout << "Spell selected!\n";
+                                game.spell();
                                 Sleep(1000);
                                 break;
                             case 3: 
                                 std::cout << "Item selected!\n";
+                                game.item();
                                 Sleep(1000);
                                 break;
                             case 4: 
                                 std::cout << "Summon selected!\n";
+                                game.summon();
                                 Sleep(1000);
                                 break;
                         }
@@ -173,6 +179,25 @@ int menuTarget(const Interface& interface_, int iter, std::vector<Character>& ta
         }
     }
 }
+
+std::vector<int> chooseTarget(std::vector<Character>& targetInv, std::string& name, int numberofTargets, bool targetPlayer = false){
+    std::vector<Character> tempTargetInv = targetInv;
+    std::vector<int> targets;
+    int i = 0;
+    int chosen;
+
+    while(i < numberofTargets){
+        chosen = helperMenuTarget(i, tempTargetInv, name, SPELL);
+        if(chosen == EXIT){
+            return;
+        }
+        tempTargetInv.erase(tempTargetInv.begin() + chosen);
+        targets.push_back(chosen);
+        i++;
+    }
+
+    return targets;
+};
 
 class Interface{
 
@@ -242,6 +267,7 @@ class Interface{
 
     void start(){
         SetConsoleTitleW(L"Battle RPG");
+        Game game;
         menu(*this);
     }
 
@@ -249,4 +275,28 @@ class Interface{
 
 
 
+};
+
+class Game{
+    public:
+
+    std::vector<Enemy> enemyField;
+
+    void attack(){
+
+    };
+
+    void defend(){
+
+    };
+    void spell(){
+
+    };
+    void item(){
+
+    };
+
+    void summon(){
+
+    };
 };
