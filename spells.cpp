@@ -26,12 +26,12 @@ class Fireball : public Spell {
     Spell(name, description)
     {}
 
-    void effect(std::vector<Character>& targetInv) override {
+    void effect(std::vector<Enemy>& targetInv) override {
         std::vector<int> targets = chooseTarget(targetInv, name_, 1);
         applyDamage(targetInv[targets[0]], 150, FIRE);
     }
 
-    void operator()(std::vector<Character>& targetInv){
+    void operator()(std::vector<Enemy>& targetInv) override {
         effect(targetInv);
     }
 

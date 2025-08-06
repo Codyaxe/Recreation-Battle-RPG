@@ -11,17 +11,19 @@ class Summon;
 class Item;
 class Debuff;
 class Buff;
+class Trait;
 
 
 class Character{
 
     public:
-    std::map<int,Spell*> spellInv;
-    std::map<int,Attack*> attackInv;
-    std::map<int,Summon*> summonInv;
-    std::map<int,Item*> itemInv;
-    std::map<int,Debuff*> debuffInv;
-    std::map<int,Buff*> buffInv;
+    std::vector<Spell*> spellInv;
+    std::vector<Attack*> attackInv;
+    std::vector<Summon*> summonInv;
+    std::vector<Item*> itemInv;
+    std::vector<Debuff*> debuffInv;
+    std::vector<Buff*> buffInv;
+    std::vector<Trait*> traitInv;
     std::string name;
     int health;
     int defense;

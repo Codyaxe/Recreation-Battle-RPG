@@ -18,8 +18,9 @@ class Spell{
     name_(name), description_(description)
     {}
 
-    virtual void effect(std::vector<Character>& targetInv) = 0;
-    virtual void operator()(std::vector<Character>& targetInv) = 0;
+    
+    virtual void effect(std::vector<Enemy>& targetInv) = 0;
+    virtual void operator()(std::vector<Enemy>& targetInv) = 0;
 
 };
 

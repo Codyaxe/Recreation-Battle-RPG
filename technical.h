@@ -16,7 +16,10 @@ enum Target_Type{
     SPELL = 10,
     ATTACK = 11,
     SUMMON = 12,
-    ITEM = 13
+    ITEM = 13,
+    DEBUFF = 14,
+    BUFF = 15,
+    TRAIT = 16
 };
 
 enum Exit_Flag{
@@ -29,6 +32,7 @@ class Game{
     public:
 
     std::vector<Enemy> enemyField;
+    Player player;
 
     Game();
     ~Game();
@@ -42,17 +46,16 @@ class Game{
 
 void displayMenu(int selectedIndex, bool resetDisplay = true);
 void displayTargetMenu(int selectedIndex, std::vector<Character>& targetInv, const std::string& name, const int& type);
-void menu();
-int helperMenuTarget(int iter, std::vector<Character>& targetInv, const std::string& name, const int& type);
-int menuTarget(const Interface& interface_, std::vector<Character>& targetInv, const std::string& name, const int& type);
+void menu(Game& game);
+int menuTarget(std::vector<Character>& targetInv, const std::string& name, const int& type);
 std::vector<int> chooseTarget(std::vector<Character>& targetInv, std::string& name, int numberofTargets, bool targetPlayer = false);
 
 class Interface{
 
     public:
 
-    HANDLE hOut;
-    HANDLE hIn;
+    static HANDLE hOut;
+    static HANDLE hIn;
     DWORD originalOutMode, originalInMode; 
     bool enableFlags();
     void restoreConsoleMode();

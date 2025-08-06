@@ -31,7 +31,8 @@ void Game::defend(){
 };
 
 void Game::spell(){
-
+    Spell* spell = menuChoose<Spell>(player, SPELL);
+    (*spell)(enemyField);
 };
 
 void Game::item(){
@@ -42,36 +43,6 @@ void Game::summon(){
 
 };
 
-
-
-void displayTargetMenu(int iter, int selectedIndex, std::vector<Character>& targetInv, const std::string& name, const int& type) {
-
-    switch(type){
-        case SPELL:
-            std::cout << "Choose target" << iter + 1 << " to cast " << name << " on: ";
-        break;
-        case ATTACK:
-            std::cout << "Choose target" << iter + 1 << " to initiate " << name << " on: ";
-        break;
-        case SUMMON:
-            std::cout << "Choose target" << iter + 1 << " to summon " << name << " on: ";
-        break;
-        case ITEM:
-            std::cout << "Choose target" << iter + 1 << " to use " << name << " on: ";
-        break;
-    }
-    
-    for (int i = 0; i < targetInv.size(); ++i) {
-        if (i == selectedIndex) {
-            std::cout << " > " << HIGHLIGHT << targetInv[i].name << RESET << '\n';
-        } else {
-            std::cout << "   " << targetInv[i].name << '\n';
-        }
-    }
-
-    std::cout << "\nUse UP/DOWN arrows to move, ENTER to select, ESC to quit.";
-    std::cout.flush(); 
-}
 
 void displayMenu(int selectedIndex, bool resetDisplay = true) {
     if (resetDisplay == true){
@@ -90,7 +61,68 @@ void displayMenu(int selectedIndex, bool resetDisplay = true) {
     std::cout.flush(); 
 }
 
-void menu(const Interface& interface_, Game& game){
+template <typename T>
+void displayChooseMenu(int selectedIndex, std::vector<T*>& inv, const int& type) {
+
+    switch(type){
+        case SPELL:
+            std::cout << "Choose a spell: \n";
+        break;
+        case ATTACK:
+            std::cout << "Choose an attack: \n";
+        break;
+        case SUMMON:
+            std::cout << "Choose a summon: \n";
+        break;
+        case ITEM:
+            std::cout << "Choose an item: \n";
+        break;
+    }
+    
+    for (int i = 0; i < inv.size(); ++i) {
+        if (i == selectedIndex) {
+            std::cout << " > " << HIGHLIGHT << inv[i].name << RESET << '\n';
+        } else {
+            std::cout << "   " << inv[i].name << '\n';
+        }
+    }
+
+    std::cout << "\nUse UP/DOWN arrows to move, ENTER to select, ESC to quit.";
+    std::cout.flush(); 
+}
+
+void displayTargetMenu(int iter, int selectedIndex, std::vector<Enemy>& targetInv, const std::string& name, const int& type) {
+
+    switch(type){
+        case SPELL:
+            std::cout << "Choose target" << iter + 1 << " to cast " << name << " on: \n";
+        break;
+        case ATTACK:
+            std::cout << "Choose target" << iter + 1 << " to initiate " << name << " on: \n";
+        break;
+        case SUMMON:
+            std::cout << "Choose target" << iter + 1 << " to summon " << name << " on: \n";
+        break;
+        case ITEM:
+            std::cout << "Choose target" << iter + 1 << " to use " << name << " on: \n";
+        break;
+    }
+    
+    for (int i = 0; i < targetInv.size(); ++i) {
+        if (i == selectedIndex) {
+            std::cout << " > " << HIGHLIGHT << targetInv[i].name << RESET << '\n';
+        } else {
+            std::cout << "   " << targetInv[i].name << '\n';
+        }
+    }
+
+    std::cout << "\nUse UP/DOWN arrows to move, ENTER to select, ESC to quit.";
+    std::cout.flush(); 
+}
+
+
+
+void menu(Game& game){
     int count = 0;
     displayMenu(count);
     
@@ -98,7 +130,7 @@ void menu(const Interface& interface_, Game& game){
     DWORD eventsRead;
     
     while (true) {
-        if (ReadConsoleInput(interface_.hIn, &inputRecord, 1, &eventsRead) && eventsRead > 0) {
+        if (ReadConsoleInput(Interface::hIn, &inputRecord, 1, &eventsRead) && eventsRead > 0) {
             if (inputRecord.EventType == KEY_EVENT && inputRecord.Event.KeyEvent.bKeyDown) {
                 WORD vkCode = inputRecord.Event.KeyEvent.wVirtualKeyCode;
                 CHAR asciiChar = inputRecord.Event.KeyEvent.uChar.AsciiChar;
@@ -166,11 +198,85 @@ void menu(const Interface& interface_, Game& game){
     }
 }
 
-int helperMenuTarget(int iter, std::vector<Character>& targetInv, const std::string& name, const int& type){
-    return menuTarget(iter, targetInv, name, type);
+template <typename T>
+T* menuChoose(Player& player,const int& type){
+    switch(type){
+    case SPELL:{
+        auto& inv = player.spellInv;
+        return menuChooseHelper(inv, SPELL);
+    }
+    case ATTACK:{
+        auto& inv = player.attackInv;
+        return menuChooseHelper(inv, SPELL);
+    }
+    case SUMMON:{
+        auto& inv = player.summonInv;
+        return menuChooseHelper(inv, SUMMON);
+    }
+    case ITEM:{
+        auto& inv = player.itemInv;
+        return menuChooseHelper(inv, ITEM);
+    }
+    case DEBUFF:{
+        auto& inv = player.debuffInv;
+        return menuChooseHelper(inv, DEBUFF);
+    }
+    case BUFF:{
+        auto& inv = player.buffInv;
+        return menuChooseHelper(inv, BUFF);
+    }
+    case TRAIT:{
+        auto& inv = player.traitInv;
+        return menuChooseHelper(inv, TRAIT);
+    }
+    }
 }
 
-int menuTarget(const Interface& interface_, int iter, std::vector<Character>& targetInv, const std::string& name, const int& type){
+template <typename T>
+T* menuChooseHelper(std::vector<T*>& inv,const int& type){
+    int count = 0;
+    displayChooseMenu(count, inv, type);
+    
+    INPUT_RECORD inputRecord;
+    DWORD eventsRead;
+    
+    while (true) {
+        if (ReadConsoleInput(Interface::hIn, &inputRecord, 1, &eventsRead) && eventsRead > 0) {
+            if (inputRecord.EventType == KEY_EVENT && inputRecord.Event.KeyEvent.bKeyDown) {
+                WORD vkCode = inputRecord.Event.KeyEvent.wVirtualKeyCode;
+                CHAR asciiChar = inputRecord.Event.KeyEvent.uChar.AsciiChar;
+                
+                switch (vkCode) {
+                    case VK_ESCAPE:
+                        clearScreen();
+                        std::cout << "Target Menu exited.\n";
+                        return;
+                        
+                    case VK_UP:
+                        count = (count - 1 + inv.size()) % inv.size();
+                        displayChooseMenu(count, inv, type);
+                        break;
+                        
+                    case VK_DOWN:
+                        count = (count + 1) % inv.size();
+                        displayChooseMenu(count, inv, type);
+                        break;
+                        
+                    case VK_RETURN:
+                        clearScreen();
+                        std::cout << "Choosing: " << inv[count].name << "\n";
+                        return inv[count];
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+}
+
+int menuTarget(int iter, std::vector<Enemy>& targetInv, const std::string& name, const int& type){
     int count = 0;
     displayTargetMenu(iter, count, targetInv, name, type);
     
@@ -178,7 +284,7 @@ int menuTarget(const Interface& interface_, int iter, std::vector<Character>& ta
     DWORD eventsRead;
     
     while (true) {
-        if (ReadConsoleInput(interface_.hIn, &inputRecord, 1, &eventsRead) && eventsRead > 0) {
+        if (ReadConsoleInput(Interface::hIn, &inputRecord, 1, &eventsRead) && eventsRead > 0) {
             if (inputRecord.EventType == KEY_EVENT && inputRecord.Event.KeyEvent.bKeyDown) {
                 WORD vkCode = inputRecord.Event.KeyEvent.wVirtualKeyCode;
                 CHAR asciiChar = inputRecord.Event.KeyEvent.uChar.AsciiChar;
@@ -213,14 +319,14 @@ int menuTarget(const Interface& interface_, int iter, std::vector<Character>& ta
     }
 }
 
-std::vector<int> chooseTarget(std::vector<Character>& targetInv, std::string& name, int numberofTargets, bool targetPlayer = false){
-    std::vector<Character> tempTargetInv = targetInv;
+std::vector<int> chooseTarget(std::vector<Enemy>& targetInv, std::string& name, int numberofTargets, bool targetPlayer = false){
+    std::vector<Enemy> tempTargetInv = targetInv;
     std::vector<int> targets;
     int i = 0;
     int chosen;
 
     while(i < numberofTargets){
-        chosen = helperMenuTarget(i, tempTargetInv, name, SPELL);
+        chosen = menuTarget(i, tempTargetInv, name, SPELL);
         if(chosen == EXIT){
             return;
         }
@@ -231,6 +337,7 @@ std::vector<int> chooseTarget(std::vector<Character>& targetInv, std::string& na
 
     return targets;
 };
+
 
 
 bool Interface::enableFlags() {
