@@ -175,7 +175,7 @@ int menu(Game& game, Player& player){
                                 break;
                             case 3: 
                                 std::cout << "Item selected!\n";
-                                player.defend(game);
+                                player.item(game);
                                 Sleep(1000);
                                 break;
                             case 4: 
