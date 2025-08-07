@@ -2,6 +2,7 @@
 #include "spelleffects.h"
 #include "technical.h"
 
+
 // class Spell{
 
 //     private:
@@ -26,12 +27,12 @@ class Fireball : public Spell {
     Spell(name_, description_)
     {}
 
-    void effect(std::vector<Enemy>& targetInv, Player& player) override {
+    void effect(std::vector<Enemy>& targetInv, Character& player) override {
         std::vector<int> targets = chooseTarget(targetInv, name, 1);
         applyDamage(targetInv[targets[0]], 150, FIRE);
     }
 
-    void operator()(std::vector<Enemy>& targetInv, Player& player) override {
+    void operator()(std::vector<Enemy>& targetInv, Character& player) override {
         effect(targetInv, player);
     }
  

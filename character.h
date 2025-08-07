@@ -14,6 +14,7 @@ class Item;
 class Debuff;
 class Buff;
 class Trait;
+class Game;
 
 //Bitmask
 enum class State : size_t {
@@ -59,6 +60,12 @@ class Character{
 
     bool hasState(State flag) const;
 
+    void attack(Game& game);
+    void defend(Game& game);
+    void spell(Game& game);
+    void item(Game& game);
+    void summon(Game& game);
+
 
 };
 
@@ -70,7 +77,8 @@ class Player : public Character{
     int armor;
 
     Player();
-
+    Player(std::string name_);
+    
     Player(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_, 
     int resistance_, int weakness_, int barrier_, int shield_, int armor_);
 

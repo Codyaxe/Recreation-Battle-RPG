@@ -24,38 +24,13 @@ Game::Game(){
         enemyField.push_back(Enemy());
     }
     for(int i = 0; i < 6; i++){
-        playerField.push_back(Player());
+        playerField.push_back(Player("Generic " + std::to_string(i)));
     }
 }
 
 Game::~Game(){
 
 }
-
-void Game::attack(Player& player){
-
-};
-
-void Game::defend(Player& player){
-
-};
-
-void Game::spell(Player& player){
-    Action* spell = menuChoose(player, SPELL);
-    if (spell == nullptr){
-        return;
-    }
-    (*spell)(enemyField, player);
-};
-
-void Game::item(Player& player){
-
-};
-
-void Game::summon(Player& player){
-
-};
-
 
 void displayMenu(int selectedIndex, bool resetDisplay) {
     if (resetDisplay == true){
@@ -185,27 +160,27 @@ int menu(Game& game, Player& player){
                         switch (count) {
                             case 0:
                                 std::cout << "Attack selected!\n";
-                                game.attack(player);
+                                player.attack(game);
                                 Sleep(1000);
                                 break;
                             case 1: 
                                 std::cout << "Defend selected!\n";
-                                game.defend(player);
+                                player.defend(game);
                                 Sleep(1000);
                                 break;
                             case 2: 
                                 std::cout << "Spell selected!\n";
-                                game.spell(player);
+                                player.spell(game);
                                 Sleep(1000);
                                 break;
                             case 3: 
                                 std::cout << "Item selected!\n";
-                                game.item(player);
+                                player.defend(game);
                                 Sleep(1000);
                                 break;
                             case 4: 
                                 std::cout << "Summon selected!\n";
-                                game.summon(player);
+                                player.summon(game);
                                 Sleep(1000);
                                 break;
                             case 5: 
@@ -229,7 +204,7 @@ int menu(Game& game, Player& player){
     }
 }
 
-Action* menuChoose(Player& player, const int& type){
+Action* menuChoose(Character& player, const int& type){
     switch(type){
     case SPELL:{
         auto& inv = player.spellInv;
@@ -367,7 +342,8 @@ int selectPlayer(std::vector<Player*>& playerInv){
                 switch (vkCode) {
                     case VK_ESCAPE:
                         clearScreen();
-                        std::cout << "Target Menu exited.\n";
+                        std::cout << "You must choose before you can exit!\n";
+                        Sleep(1000);
                         return EXIT;
                         
                     case VK_UP:
@@ -383,6 +359,7 @@ int selectPlayer(std::vector<Player*>& playerInv){
                     case VK_RETURN:
                         clearScreen();
                         std::cout << "Selecting: " << playerInv[count]->name << "\n";
+                        Sleep(1000);
                         return count;
                         break;
 
@@ -403,12 +380,13 @@ void menuPlayer(Game& game){
         int selectedIndex;
         do{
         selectedIndex = selectPlayer(tracker);
-        if (selectedIndex == EXIT) {
-            std::cout << "You must choose before you can exit!" << '\n';
-        } }while(selectedIndex == EXIT);
+        }while(selectedIndex == EXIT);
 
         Player& selectedPlayer = *tracker[selectedIndex];
-        menu(game, selectedPlayer);
+        int menuState = menu(game, selectedPlayer);
+        if(menuState == EXIT){
+            continue;
+        }
         tracker.erase(tracker.begin() + selectedIndex);
     }
 }

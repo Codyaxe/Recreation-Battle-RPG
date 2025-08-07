@@ -1,4 +1,5 @@
 #include "character.h"
+#include "technical.h"
 
 
 // class Character{
@@ -45,8 +46,37 @@ bool Character::hasState(State flag) const {
     return states.test(static_cast<size_t>(flag));
 }
 
+void Character::attack(Game& game){
+
+};
+
+void Character::defend(Game& game){
+
+};
+
+void Character::spell(Game& game){
+    Action* spell = menuChoose(*this, SPELL);
+    if (spell == nullptr){
+        return;
+    }
+    (*spell)(game.enemyField, *this);
+};
+
+void Character::item(Game& game){
+
+};
+
+void Character::summon(Game& game){
+
+};
+
+
 Player::Player() : 
 Character("Generic Player", 1000, 50, 100, 100, 0, 0, 0)
+{}
+
+Player::Player(std::string name_) : 
+Character(name_, 200, 50, 100, 100, 0, 0, 0)
 {}
 
 Player::Player(std::string name_, int health_, int defense_, int speed_, 
@@ -61,3 +91,4 @@ barrier(barrier_), shield(shield_), armor(armor_)
 Enemy::Enemy() : 
 Character("Generic", 200, 50, 100, 100, 0, 0, 0)
 {}
+

@@ -5,7 +5,6 @@
 #include <vector>
 #include <windows.h>
 #include "character.h"
-#include "observer.h"
 
 const std::string RESET = "\033[0m";
 const std::string HIGHLIGHT = "\033[47;30m";
@@ -30,21 +29,14 @@ enum Return_Flags{
 
 void clearScreen();
 
-class Game {
+class Game{
     public:
 
     std::vector<Enemy> enemyField;
     std::vector<Player> playerField;
-    int currentTurn = 1;
 
     Game();
     ~Game();
-
-    void attack(Player& player);
-    void defend(Player& player);
-    void spell(Player& player);
-    void item(Player& player);
-    void summon(Player& player);
 };
 
 void displayMenu(int selectedIndex, bool resetDisplay = true);
@@ -53,7 +45,7 @@ template <typename T>
 void displayChooseMenu(int selectedIndex, std::vector<T*>& inv, const int& type);
 void displayPlayerSelect(int selectedIndex, std::vector<Player*>& playerInv);
 int menu(Game& game, Player& player);
-Action* menuChoose(Player& player, const int& type);
+Action* menuChoose(Character& player, const int& type);
 template <typename T>
 T* menuChooseHelper(std::vector<T*>& inv,const int& type);
 int menuTarget(std::vector<Character>& targetInv, const std::string& name, const int& type);
