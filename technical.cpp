@@ -3,7 +3,7 @@
 
 const std::string RESET = "\033[0m";
 const std::string HIGHLIGHT = "\033[47;30m";
-const std::string actions[5] = { "Attack", "Defend", "Spell", "Item", "Summon" };
+const std::string actions[6] = { "Attack", "Defend", "Spell", "Item", "Summon", "Skip" };
 const int NUM_ACTIONS = sizeof(actions) / sizeof(actions[0]);
 
 
@@ -22,24 +22,27 @@ Game::~Game(){
 
 }
 
-void Game::attack(){
+void Game::attack(Player& player){
 
 };
 
-void Game::defend(){
+void Game::defend(Player& player){
 
 };
 
-void Game::spell(){
+void Game::spell(Player& player){
     Spell* spell = menuChoose<Spell>(player, SPELL);
+    if (spell == nullptr){
+        return;
+    }
     (*spell)(enemyField, player);
 };
 
-void Game::item(){
+void Game::item(Player& player){
 
 };
 
-void Game::summon(){
+void Game::summon(Player& player){
 
 };
 
@@ -91,7 +94,7 @@ void displayChooseMenu(int selectedIndex, std::vector<T*>& inv, const int& type)
     std::cout.flush(); 
 }
 
-void displayTargetMenu(int iter, int selectedIndex, std::vector<Enemy>& targetInv, const std::string& name, const int& type) {
+void displayTargetMenu(int iter, int selectedIndex, std::vector<Enemy*>& targetInv, const std::string& name, const int& type) {
 
     switch(type){
         case SPELL:
@@ -110,9 +113,23 @@ void displayTargetMenu(int iter, int selectedIndex, std::vector<Enemy>& targetIn
     
     for (int i = 0; i < targetInv.size(); ++i) {
         if (i == selectedIndex) {
-            std::cout << " > " << HIGHLIGHT << targetInv[i].name << RESET << '\n';
+            std::cout << " > " << HIGHLIGHT << targetInv[i]->name << RESET << '\n';
         } else {
-            std::cout << "   " << targetInv[i].name << '\n';
+            std::cout << "   " << targetInv[i]->name << '\n';
+        }
+    }
+
+    std::cout << "\nUse UP/DOWN arrows to move, ENTER to select, ESC to quit.";
+    std::cout.flush(); 
+}
+
+void displayPlayerSelect(int selectedIndex, std::vector<Player*>& playerInv) {
+    
+    for (int i = 0; i < playerInv.size(); ++i) {
+        if (i == selectedIndex) {
+            std::cout << " > " << HIGHLIGHT << playerInv[i]->name << RESET << '\n';
+        } else {
+            std::cout << "   " << playerInv[i]->name << '\n';
         }
     }
 
@@ -122,7 +139,7 @@ void displayTargetMenu(int iter, int selectedIndex, std::vector<Enemy>& targetIn
 
 
 
-void menu(Game& game){
+int menu(Game& game, Player& player){
     int count = 0;
     displayMenu(count);
     
@@ -139,7 +156,7 @@ void menu(Game& game){
                     case VK_ESCAPE:
                         clearScreen();
                         std::cout << "Game menu exited.\n";
-                        return;
+                        return EXIT;
                         
                     case VK_UP:
                         count = (count - 1 + NUM_ACTIONS) % NUM_ACTIONS;
@@ -158,29 +175,33 @@ void menu(Game& game){
                         switch (count) {
                             case 0:
                                 std::cout << "Attack selected!\n";
-                                game.attack();
+                                game.attack(player);
                                 Sleep(1000);
                                 break;
                             case 1: 
                                 std::cout << "Defend selected!\n";
-                                game.defend();
+                                game.defend(player);
                                 Sleep(1000);
                                 break;
                             case 2: 
                                 std::cout << "Spell selected!\n";
-                                game.spell();
+                                game.spell(player);
                                 Sleep(1000);
                                 break;
                             case 3: 
                                 std::cout << "Item selected!\n";
-                                game.item();
+                                game.item(player);
                                 Sleep(1000);
                                 break;
                             case 4: 
                                 std::cout << "Summon selected!\n";
-                                game.summon();
+                                game.summon(player);
                                 Sleep(1000);
                                 break;
+                            case 5: 
+                                std::cout << "Skip selected!\n";
+                                Sleep(1000);
+                                return SKIP;
                         }
                         displayMenu(count); // Redisplay menu after action
                         break;
@@ -207,7 +228,7 @@ T* menuChoose(Player& player,const int& type){
     }
     case ATTACK:{
         auto& inv = player.attackInv;
-        return menuChooseHelper(inv, SPELL);
+        return menuChooseHelper(inv, ATTACK);
     }
     case SUMMON:{
         auto& inv = player.summonInv;
@@ -250,7 +271,7 @@ T* menuChooseHelper(std::vector<T*>& inv,const int& type){
                     case VK_ESCAPE:
                         clearScreen();
                         std::cout << "Target Menu exited.\n";
-                        return;
+                        return nullptr;
                         
                     case VK_UP:
                         count = (count - 1 + inv.size()) % inv.size();
@@ -276,7 +297,7 @@ T* menuChooseHelper(std::vector<T*>& inv,const int& type){
     }
 }
 
-int menuTarget(int iter, std::vector<Enemy>& targetInv, const std::string& name, const int& type){
+int menuTarget(int iter, std::vector<Enemy*>& targetInv, const std::string& name, const int& type){
     int count = 0;
     displayTargetMenu(iter, count, targetInv, name, type);
     
@@ -307,7 +328,7 @@ int menuTarget(int iter, std::vector<Enemy>& targetInv, const std::string& name,
                         
                     case VK_RETURN:
                         clearScreen();
-                        std::cout << "Targeting: " << targetInv[count].name << "\n";
+                        std::cout << "Targeting: " << targetInv[count]->name << "\n";
                         return count;
                         break;
 
@@ -319,19 +340,86 @@ int menuTarget(int iter, std::vector<Enemy>& targetInv, const std::string& name,
     }
 }
 
+int selectPlayer(std::vector<Player*>& playerInv){
+
+    int count = 0;
+    displayPlayerSelect(count, playerInv);
+    
+    INPUT_RECORD inputRecord;
+    DWORD eventsRead;
+    
+    while (true) {
+        if (ReadConsoleInput(Interface::hIn, &inputRecord, 1, &eventsRead) && eventsRead > 0) {
+            if (inputRecord.EventType == KEY_EVENT && inputRecord.Event.KeyEvent.bKeyDown) {
+                WORD vkCode = inputRecord.Event.KeyEvent.wVirtualKeyCode;
+                CHAR asciiChar = inputRecord.Event.KeyEvent.uChar.AsciiChar;
+                
+                switch (vkCode) {
+                    case VK_ESCAPE:
+                        clearScreen();
+                        std::cout << "Target Menu exited.\n";
+                        return EXIT;
+                        
+                    case VK_UP:
+                        count = (count - 1 + playerInv.size()) % playerInv.size();
+                        displayPlayerSelect(count, playerInv);
+                        break;
+                        
+                    case VK_DOWN:
+                        count = (count + 1) % playerInv.size();
+                        displayPlayerSelect(count, playerInv);
+                        break;
+                        
+                    case VK_RETURN:
+                        clearScreen();
+                        std::cout << "Selecting: " << playerInv[count]->name << "\n";
+                        return count;
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+}
+
+void menuPlayer(Game& game){
+    std::vector<Player*> tracker;
+    for (Player& player : game.playerField) {
+        tracker.push_back(&player);
+    }
+    while (!tracker.empty()){
+        int selectedIndex;
+        do{
+        selectedIndex = selectPlayer(tracker);
+        if (selectedIndex == EXIT) {
+            std::cout << "You must choose before you can exit!" << '\n';
+        } }while(selectedIndex == EXIT);
+
+        Player& selectedPlayer = *tracker[selectedIndex];
+        menu(game, selectedPlayer);
+        tracker.erase(tracker.begin() + selectedIndex);
+    }
+}
+
 std::vector<int> chooseTarget(std::vector<Enemy>& targetInv, std::string& name, int numberofTargets, bool targetPlayer = false){
-    std::vector<Enemy> tempTargetInv = targetInv;
+    std::vector<Enemy*> tracker;
+    for(auto& enemy : targetInv){
+        tracker.push_back(&enemy);
+    }
+
     std::vector<int> targets;
     int i = 0;
-    int chosen;
+    int selectedIndex;
 
     while(i < numberofTargets){
-        chosen = menuTarget(i, tempTargetInv, name, SPELL);
-        if(chosen == EXIT){
-            return;
+        selectedIndex = menuTarget(i, tracker, name, SPELL);
+        if(selectedIndex == EXIT){
+            return targets;
         }
-        tempTargetInv.erase(tempTargetInv.begin() + chosen);
-        targets.push_back(chosen);
+        tracker.erase(tracker.begin() + selectedIndex);
+        targets.push_back(selectedIndex);
         i++;
     }
 
@@ -399,7 +487,8 @@ Interface::~Interface() {
 void Interface::start(){
     SetConsoleTitleW(L"Battle RPG");
     Game game;
-    menu(*this);
+    menuPlayer(game);
+
 }
 
     

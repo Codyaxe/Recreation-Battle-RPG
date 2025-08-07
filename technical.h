@@ -11,7 +11,7 @@ const std::string HIGHLIGHT;
 const std::string actions[5];
 
 const int NUM_ACTIONS;
-
+//Will Use Scoped Enums
 enum Target_Type{
     SPELL = 10,
     ATTACK = 11,
@@ -22,8 +22,9 @@ enum Target_Type{
     TRAIT = 16
 };
 
-enum Exit_Flag{
+enum Return_Flags{
     EXIT = -1,
+    SKIP = -2
 };
 
 void clearScreen();
@@ -32,23 +33,33 @@ class Game{
     public:
 
     std::vector<Enemy> enemyField;
-    Player player;
+    std::vector<Player> playerField;
 
     Game();
     ~Game();
 
-    void attack();
-    void defend();
-    void spell();
-    void item();
-    void summon();
+    void attack(Player& player);
+    void defend(Player& player);
+    void spell(Player& player);
+    void item(Player& player);
+    void summon(Player& player);
 };
 
 void displayMenu(int selectedIndex, bool resetDisplay = true);
 void displayTargetMenu(int selectedIndex, std::vector<Character>& targetInv, const std::string& name, const int& type);
-void menu(Game& game);
+template <typename T>
+void displayChooseMenu(int selectedIndex, std::vector<T*>& inv, const int& type);
+void displayPlayerSelect(int selectedIndex, std::vector<Player*>& playerInv);
+int menu(Game& game, Player& player);
+template <typename T>
+T* menuChoose(Player& player,const int& type);
+template <typename T>
+T* menuChooseHelper(std::vector<T*>& inv,const int& type);
 int menuTarget(std::vector<Character>& targetInv, const std::string& name, const int& type);
+int selectPlayer(std::vector<Player*>& playerInv);
+void menuPlayer(Game& game);
 std::vector<int> chooseTarget(std::vector<Enemy>& targetInv, std::string& name, int numberofTargets, bool targetPlayer = false);
+
 
 class Interface{
 
@@ -65,9 +76,6 @@ class Interface{
     Interface();
     ~Interface();
     void start();
-    friend void menu(const Interface& interface_);
-
-
 
 };
 
