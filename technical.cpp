@@ -32,7 +32,7 @@ void Game::defend(){
 
 void Game::spell(){
     Spell* spell = menuChoose<Spell>(player, SPELL);
-    (*spell)(enemyField);
+    (*spell)(enemyField, player);
 };
 
 void Game::item(){

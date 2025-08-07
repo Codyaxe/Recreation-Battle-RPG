@@ -11,16 +11,16 @@ class Spell{
 
     public:
 
-    std::string name_;
-    std::string description_;
+    std::string name;
+    std::string description;
 
-    Spell(std::string& name, std::string& description) : 
-    name_(name), description_(description)
+    Spell(const std::string& name_, const std::string& description_) : 
+    name(name_), description(description_)
     {}
 
     
-    virtual void effect(std::vector<Enemy>& targetInv) = 0;
-    virtual void operator()(std::vector<Enemy>& targetInv) = 0;
+    virtual void effect(std::vector<Enemy>& targetInv, Player& player) = 0;
+    virtual void operator()(std::vector<Enemy>& targetInv, Player& player) = 0;
 
 };
 

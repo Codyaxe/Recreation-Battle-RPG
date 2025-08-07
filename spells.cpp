@@ -22,17 +22,17 @@
 
 class Fireball : public Spell {
 
-    Fireball(std::string& name, std::string& description) : 
-    Spell(name, description)
+    Fireball(const std::string& name_, const std::string& description_) : 
+    Spell(name_, description_)
     {}
 
-    void effect(std::vector<Enemy>& targetInv) override {
-        std::vector<int> targets = chooseTarget(targetInv, name_, 1);
+    void effect(std::vector<Enemy>& targetInv, Player& player) override {
+        std::vector<int> targets = chooseTarget(targetInv, name, 1);
         applyDamage(targetInv[targets[0]], 150, FIRE);
     }
 
-    void operator()(std::vector<Enemy>& targetInv) override {
-        effect(targetInv);
+    void operator()(std::vector<Enemy>& targetInv, Player& player) override {
+        effect(targetInv, player);
     }
-
+ 
 };

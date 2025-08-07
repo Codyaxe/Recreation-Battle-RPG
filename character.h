@@ -1,7 +1,6 @@
 #ifndef CHARACTER_H
 #define CHARACTER_H
 
-#include <map>
 #include <memory>
 #include <string>
 #include "spells.h"
@@ -34,20 +33,29 @@ class Character{
     int resistance;
     int weakness;
 
+    Character(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_);
+
 };
 
 class Player : public Character{
 
     public:
-    int shield;
     int barrier;
+    int shield;
     int armor;
+
+    Player();
+
+    Player(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_, 
+    int resistance_, int weakness_, int barrier_, int shield_, int armor_);
 
 };
 
 class Enemy : public Character{
 
+    public:
 
+    Enemy();
 };
 
 

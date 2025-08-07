@@ -48,7 +48,7 @@ void displayMenu(int selectedIndex, bool resetDisplay = true);
 void displayTargetMenu(int selectedIndex, std::vector<Character>& targetInv, const std::string& name, const int& type);
 void menu(Game& game);
 int menuTarget(std::vector<Character>& targetInv, const std::string& name, const int& type);
-std::vector<int> chooseTarget(std::vector<Character>& targetInv, std::string& name, int numberofTargets, bool targetPlayer = false);
+std::vector<int> chooseTarget(std::vector<Enemy>& targetInv, std::string& name, int numberofTargets, bool targetPlayer = false);
 
 class Interface{
 

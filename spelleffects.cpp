@@ -9,6 +9,10 @@ void applyDamage(Character& target, int damage, int damageType){
 // }
 };
 
+void gainStats(Character& target){
+    
+};
+
 void applyHeal(Character& target){
     
 };
