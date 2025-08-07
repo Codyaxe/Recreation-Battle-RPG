@@ -1,10 +1,17 @@
 #include "technical.h"
 #include "character.h"
+#include "action.h"
+#include "attacks.h"
+#include "buffs.h"
+#include "debuffs.h"
+#include "items.h"
+#include "spells.h"
+#include "spelleffects.h"
+#include "summons.h"
+#include "traits.h"
 
-const std::string RESET = "\033[0m";
-const std::string HIGHLIGHT = "\033[47;30m";
-const std::string actions[6] = { "Attack", "Defend", "Spell", "Item", "Summon", "Skip" };
-const int NUM_ACTIONS = sizeof(actions) / sizeof(actions[0]);
+HANDLE Interface::hOut;
+HANDLE Interface::hIn;
 
 
 void clearScreen() {
@@ -15,6 +22,9 @@ void clearScreen() {
 Game::Game(){
     for(int i = 0; i < 6; i++){
         enemyField.push_back(Enemy());
+    }
+    for(int i = 0; i < 6; i++){
+        playerField.push_back(Player());
     }
 }
 
@@ -31,7 +41,7 @@ void Game::defend(Player& player){
 };
 
 void Game::spell(Player& player){
-    Spell* spell = menuChoose<Spell>(player, SPELL);
+    Action* spell = menuChoose(player, SPELL);
     if (spell == nullptr){
         return;
     }
@@ -47,7 +57,7 @@ void Game::summon(Player& player){
 };
 
 
-void displayMenu(int selectedIndex, bool resetDisplay = true) {
+void displayMenu(int selectedIndex, bool resetDisplay) {
     if (resetDisplay == true){
         clearScreen();
     }
@@ -84,9 +94,9 @@ void displayChooseMenu(int selectedIndex, std::vector<T*>& inv, const int& type)
     
     for (int i = 0; i < inv.size(); ++i) {
         if (i == selectedIndex) {
-            std::cout << " > " << HIGHLIGHT << inv[i].name << RESET << '\n';
+            std::cout << " > " << HIGHLIGHT << inv[i]->name << RESET << '\n';
         } else {
-            std::cout << "   " << inv[i].name << '\n';
+            std::cout << "   " << inv[i]->name << '\n';
         }
     }
 
@@ -124,7 +134,7 @@ void displayTargetMenu(int iter, int selectedIndex, std::vector<Enemy*>& targetI
 }
 
 void displayPlayerSelect(int selectedIndex, std::vector<Player*>& playerInv) {
-    
+    clearScreen();
     for (int i = 0; i < playerInv.size(); ++i) {
         if (i == selectedIndex) {
             std::cout << " > " << HIGHLIGHT << playerInv[i]->name << RESET << '\n';
@@ -219,8 +229,7 @@ int menu(Game& game, Player& player){
     }
 }
 
-template <typename T>
-T* menuChoose(Player& player,const int& type){
+Action* menuChoose(Player& player, const int& type){
     switch(type){
     case SPELL:{
         auto& inv = player.spellInv;
@@ -251,6 +260,7 @@ T* menuChoose(Player& player,const int& type){
         return menuChooseHelper(inv, TRAIT);
     }
     }
+    return nullptr;
 }
 
 template <typename T>
@@ -285,7 +295,7 @@ T* menuChooseHelper(std::vector<T*>& inv,const int& type){
                         
                     case VK_RETURN:
                         clearScreen();
-                        std::cout << "Choosing: " << inv[count].name << "\n";
+                        std::cout << "Choosing: " << inv[count]->name << "\n";
                         return inv[count];
                         break;
 
@@ -403,7 +413,7 @@ void menuPlayer(Game& game){
     }
 }
 
-std::vector<int> chooseTarget(std::vector<Enemy>& targetInv, std::string& name, int numberofTargets, bool targetPlayer = false){
+std::vector<int> chooseTarget(std::vector<Enemy>& targetInv, std::string& name, int numberofTargets, bool targetPlayer){
     std::vector<Enemy*> tracker;
     for(auto& enemy : targetInv){
         tracker.push_back(&enemy);
@@ -415,6 +425,7 @@ std::vector<int> chooseTarget(std::vector<Enemy>& targetInv, std::string& name, 
 
     while(i < numberofTargets){
         selectedIndex = menuTarget(i, tracker, name, SPELL);
+        //Placeholder, this will act as an end turn;
         if(selectedIndex == EXIT){
             return targets;
         }

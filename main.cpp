@@ -1,5 +1,10 @@
 #include <iostream>
-#include "technical.h"
+#include "character.cpp"
+#include "debuffs.cpp"
+#include "buffs.cpp"
+#include "spells.cpp"
+#include "spelleffects.cpp"
+#include "technical.cpp"
 
 //Using Windows Console API, Starting From Scratch
 

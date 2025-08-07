@@ -6,11 +6,11 @@
 #include <windows.h>
 #include "character.h"
 
-const std::string RESET;
-const std::string HIGHLIGHT;
-const std::string actions[5];
+const std::string RESET = "\033[0m";
+const std::string HIGHLIGHT = "\033[47;30m";
+const std::string actions[6] = { "Attack", "Defend", "Spell", "Item", "Summon", "Skip" };
+const int NUM_ACTIONS = sizeof(actions) / sizeof(actions[0]);
 
-const int NUM_ACTIONS;
 //Will Use Scoped Enums
 enum Target_Type{
     SPELL = 10,
@@ -51,8 +51,7 @@ template <typename T>
 void displayChooseMenu(int selectedIndex, std::vector<T*>& inv, const int& type);
 void displayPlayerSelect(int selectedIndex, std::vector<Player*>& playerInv);
 int menu(Game& game, Player& player);
-template <typename T>
-T* menuChoose(Player& player,const int& type);
+Action* menuChoose(Player& player, const int& type);
 template <typename T>
 T* menuChooseHelper(std::vector<T*>& inv,const int& type);
 int menuTarget(std::vector<Character>& targetInv, const std::string& name, const int& type);

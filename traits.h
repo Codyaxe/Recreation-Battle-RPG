@@ -1,5 +1,5 @@
-#ifndef ATTACKS_H
-#define ATTACKS_H
+#ifndef TRAITS_H
+#define TRAITS_H
 
 #include <string>
 #include "character.h"
@@ -8,11 +8,11 @@
 class Player;
 class Enemy;
 
-class Attack : public Action{
+class Trait : public Action{
 
     public:
 
-    Attack(const std::string& name_, const std::string& description_) : 
+    Trait(const std::string& name_, const std::string& description_) : 
     Action(name_,description_)
     {}
 

@@ -33,6 +33,18 @@ mana(mana_), resistance(resistance_), weakness(weakness_)
 
 {}
 
+void Character::setState(State flag) {
+    states.set(static_cast<size_t>(flag));
+}
+
+void Character::clearState(State flag) {
+    states.reset(static_cast<size_t>(flag));
+}
+
+bool Character::hasState(State flag) const {
+    return states.test(static_cast<size_t>(flag));
+}
+
 Player::Player() : 
 Character("Generic Player", 1000, 50, 100, 100, 0, 0, 0)
 {}
