@@ -6,3 +6,5 @@
 //event notification system
 
 //Handle observers in effects
+
+//Handle if something is damaged, healed, obtain stats, lose stats, attain buff/debuffs, triggers x, and has x;

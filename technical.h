@@ -30,7 +30,7 @@ enum Return_Flags{
 
 void clearScreen();
 
-class Game : public GameEventSubject {
+class Game {
     public:
 
     std::vector<Enemy> enemyField;
