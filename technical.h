@@ -5,6 +5,7 @@
 #include <vector>
 #include <windows.h>
 #include "character.h"
+#include "observer.h"
 
 const std::string RESET = "\033[0m";
 const std::string HIGHLIGHT = "\033[47;30m";
@@ -29,11 +30,12 @@ enum Return_Flags{
 
 void clearScreen();
 
-class Game{
+class Game : public GameEventSubject {
     public:
 
     std::vector<Enemy> enemyField;
     std::vector<Player> playerField;
+    int currentTurn = 1;
 
     Game();
     ~Game();
