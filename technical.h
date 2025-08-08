@@ -4,14 +4,14 @@
 #include <iostream>
 #include <vector>
 #include <windows.h>
-#include "character.h"
 
-using Inventory = Action;
+class Character;
+class Player;
+class Enemy;
+class Action;
 
 const std::string RESET = "\033[0m";
 const std::string HIGHLIGHT = "\033[47;30m";
-const std::string actions[6] = { "Attack", "Defend", "Spell", "Item", "Summon", "Skip" };
-const int NUM_ACTIONS = sizeof(actions) / sizeof(actions[0]);
 
 //Will Use Scoped Enums
 enum Target_Type{
@@ -32,7 +32,18 @@ enum Target_Group{
 
 enum Return_Flags{
     EXIT = -1,
-    SKIP = -2
+    SKIP = -2,
+    END = -3
+};
+
+enum Action_Result{
+    NONE = 0,
+    END_TURN = -1,
+    SKIP_TURN = -2,
+    END_BATTLE= -5,
+    CONTINUE_TURN = 1,
+    EXTRA_TURN = 2,    
+    INTERRUPT_TURN = 3
 };
 
 void clearScreen();
@@ -47,7 +58,7 @@ class Game{
     ~Game();
 };
 
-void displayMenu(int selectedIndex, bool resetDisplay = true);
+void displayMenu(int selectedIndex, Player& player, bool resetDisplay = true);
 void displayTargetMenu(int selectedIndex, std::vector<Character*>& targets, const std::string& name, const int& type);
 void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const int& type);
 void displayPlayerSelect(int selectedIndex, std::vector<Player*>& allies);

@@ -1,11 +1,12 @@
 #ifndef ACTION_H
 #define ACTION_H
 #include <string>
-#include "character.h"
+#include <vector>
 
+class Character;
 class Enemy;
 class Player;
-class Character;
+
 
 class Action {
 
@@ -14,7 +15,7 @@ class Action {
     std::string description;
 
     Action();
-    Action(std::string name_, std::string description_);
+    Action(const std::string& name_, const std::string& description_);
     virtual void operator()(std::vector<Character*>& enemies, std::vector<Character*>& allies, Character& player) = 0;
 
 };

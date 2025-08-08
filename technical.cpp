@@ -26,22 +26,25 @@ Game::Game(){
     for(int i = 0; i < 6; i++){
         allies.push_back(new Player("Generic " + std::to_string(i)));
     }
+    for(int i = 0; i < 6; i++){
+        allies[i]->spellInv.push_back(new Fireball());
+    }
 }
 
 Game::~Game(){
 
 }
 
-void displayMenu(int selectedIndex, bool resetDisplay) {
+void displayMenu(int selectedIndex, Player& player, bool resetDisplay) {
     if (resetDisplay == true){
         clearScreen();
     }
     std::cout << "Choose your action:\n\n";
-    for (int i = 0; i < NUM_ACTIONS; ++i) {
+    for (int i = 0; i < player.commandsSize; ++i) {
         if (i == selectedIndex) {
-            std::cout << " > " << HIGHLIGHT << actions[i] << RESET << '\n';
+            std::cout << " > " << HIGHLIGHT << player.commands[i].name << RESET << '\n';
         } else {
-            std::cout << "   " << actions[i] << '\n';
+            std::cout << "   " << player.commands[i].name << '\n';
         }
     }
 
@@ -54,16 +57,23 @@ void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const int& 
     switch(type){
         case SPELL:
             std::cout << "Choose a spell: \n";
-        break;
+            break;
+
         case ATTACK:
             std::cout << "Choose an attack: \n";
-        break;
+            break;
+
         case SUMMON:
             std::cout << "Choose a summon: \n";
-        break;
+            break;
+
         case ITEM:
             std::cout << "Choose an item: \n";
-        break;
+            break;
+
+        default:
+            std::cout << "Choose a/an [REDACTED]: \n";
+            break;
     }
     
     for (int i = 0; i < inv.size(); ++i) {
@@ -79,20 +89,28 @@ void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const int& 
 }
 
 void displayTargetMenu(int iter, int selectedIndex, std::vector<Character*>& targets, const std::string& name, const int& type) {
-
+    clearScreen();
+    
     switch(type){
         case SPELL:
             std::cout << "Choose target" << iter + 1 << " to cast " << name << " on: \n";
-        break;
+            break;
+
         case ATTACK:
             std::cout << "Choose target" << iter + 1 << " to initiate " << name << " on: \n";
-        break;
+            break;
+
         case SUMMON:
             std::cout << "Choose target" << iter + 1 << " to summon " << name << " on: \n";
-        break;
+            break;
+
         case ITEM:
             std::cout << "Choose target" << iter + 1 << " to use " << name << " on: \n";
-        break;
+            break;
+
+        default:
+            std::cout << "Choose target" << iter + 1 << " to [REDACTED] " << name << " on: \n";;
+            break;
     }
     
     for (int i = 0; i < targets.size(); ++i) {
@@ -125,7 +143,7 @@ void displayPlayerSelect(int selectedIndex, std::vector<Player*>& allies) {
 
 int menu(Game& game, Player& player){
     int count = 0;
-    displayMenu(count);
+    displayMenu(count, player);
     
     INPUT_RECORD inputRecord;
     DWORD eventsRead;
@@ -139,57 +157,51 @@ int menu(Game& game, Player& player){
                 switch (vkCode) {
                     case VK_ESCAPE:
                         clearScreen();
-                        std::cout << "Game menu exited.\n";
+                        std::cout << "Action selection exited.\n";
+                        Sleep(1000);
                         return EXIT;
                         
                     case VK_UP:
-                        count = (count - 1 + NUM_ACTIONS) % NUM_ACTIONS;
-                        displayMenu(count);
+                        count = (count - 1 + player.commandsSize) % player.commandsSize;
+                        displayMenu(count, player);
                         break;
                         
                     case VK_DOWN:
-                        count = (count + 1) % NUM_ACTIONS;
-                        displayMenu(count);
+                        count = (count + 1) % player.commandsSize;
+                        displayMenu(count, player);
                         break;
                         
-                    case VK_RETURN:
+                    case VK_RETURN: {
                         clearScreen();
-                        std::cout << "Executing: " << actions[count] << "\n";
-                        
-                        switch (count) {
-                            case 0:
-                                std::cout << "Attack selected!\n";
-                                player.attack(game);
-                                Sleep(1000);
-                                break;
-                            case 1: 
-                                std::cout << "Defend selected!\n";
-                                player.defend(game);
-                                Sleep(1000);
-                                break;
-                            case 2: 
-                                std::cout << "Spell selected!\n";
-                                player.spell(game);
-                                Sleep(1000);
-                                break;
-                            case 3: 
-                                std::cout << "Item selected!\n";
-                                player.item(game);
-                                Sleep(1000);
-                                break;
-                            case 4: 
-                                std::cout << "Summon selected!\n";
-                                player.summon(game);
-                                Sleep(1000);
-                                break;
-                            case 5: 
-                                std::cout << "Skip selected!\n";
-                                Sleep(1000);
+                        std::cout << "Executing: " << player.commands[count].name << "\n";
+                        std::cout << player.commands[count].name << " selected!\n";
+                        int result = player.commands[count].execute(game);
+                        switch(result){
+                            case END_TURN:  
+                                return END;
+
+                            case SKIP_TURN: 
                                 return SKIP;
+
+                            case CONTINUE_TURN:
+                                break;
+
+                            case EXTRA_TURN:
+                                break;
+
+                            case INTERRUPT_TURN:
+                                return END;
+
+                            case NONE:
+                                break;
+
+                            default:
+                                break;
                         }
-                        displayMenu(count); // Redisplay menu after action
+                        Sleep(1000);
+                        displayMenu(count, player); // Redisplay menu after action
                         break;
-                        
+                    }
                     default:
                         // Handle other keys if needed
                         if (asciiChar >= 32 && asciiChar <= 126) {
@@ -205,34 +217,43 @@ int menu(Game& game, Player& player){
 
 Action* menuChoose(Character& player, const int& type){
     switch(type){
-    case SPELL:{
-        auto& inv = player.spellInv;
-        return menuChooseHelper(inv, SPELL);
-    }
-    case ATTACK:{
-        auto& inv = player.attackInv;
-        return menuChooseHelper(inv, ATTACK);
-    }
-    case SUMMON:{
-        auto& inv = player.summonInv;
-        return menuChooseHelper(inv, SUMMON);
-    }
-    case ITEM:{
-        auto& inv = player.itemInv;
-        return menuChooseHelper(inv, ITEM);
-    }
-    case DEBUFF:{
-        auto& inv = player.debuffInv;
-        return menuChooseHelper(inv, DEBUFF);
-    }
-    case BUFF:{
-        auto& inv = player.buffInv;
-        return menuChooseHelper(inv, BUFF);
-    }
-    case TRAIT:{
-        auto& inv = player.traitInv;
-        return menuChooseHelper(inv, TRAIT);
-    }
+        case SPELL:{
+            auto& inv = player.spellInv;
+            return menuChooseHelper(inv, SPELL);
+        }
+
+        case ATTACK:{
+            auto& inv = player.attackInv;
+            return menuChooseHelper(inv, ATTACK);
+        }
+
+        case SUMMON:{
+            auto& inv = player.summonInv;
+            return menuChooseHelper(inv, SUMMON);
+        }
+
+        case ITEM:{
+            auto& inv = player.itemInv;
+            return menuChooseHelper(inv, ITEM);
+        }
+
+        case DEBUFF:{
+            auto& inv = player.debuffInv;
+            return menuChooseHelper(inv, DEBUFF);
+        }
+
+        case BUFF:{
+            auto& inv = player.buffInv;
+            return menuChooseHelper(inv, BUFF);
+        }
+
+        case TRAIT:{
+            auto& inv = player.traitInv;
+            return menuChooseHelper(inv, TRAIT);
+        }
+
+        default:
+            break;
     }
     return nullptr;
 }
@@ -419,7 +440,6 @@ std::vector<int> chooseTarget(std::vector<Character*>& enemies, std::vector<Char
 
     while(i < numberofTargets){
         selectedIndex = menuTarget(i, candidates, name, type);
-        //Placeholder, this will act as an end turn;
         if(selectedIndex == EXIT){
             return targets;
         }

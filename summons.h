@@ -2,9 +2,10 @@
 #define SUMMONS_H
 
 #include <string>
-#include "character.h"
+#include <vector>
 #include "action.h"
 
+class Character;
 class Player;
 class Enemy;
 

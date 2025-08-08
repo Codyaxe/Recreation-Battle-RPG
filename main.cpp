@@ -1,4 +1,6 @@
 #include <iostream>
+#include "action.cpp"
+#include "attacks.cpp"
 #include "character.cpp"
 #include "debuffs.cpp"
 #include "buffs.cpp"

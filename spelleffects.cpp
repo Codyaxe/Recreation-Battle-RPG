@@ -1,5 +1,6 @@
 #include "spelleffects.h"
 #include "technical.h"
+#include "character.h"
 
 void applyDamage(Character* target, int damage, int damageType){
     target->health -= damage;
