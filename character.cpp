@@ -55,11 +55,12 @@ void Character::defend(Game& game){
 };
 
 void Character::spell(Game& game){
-    Action* spell = menuChoose(*this, SPELL);
+    Action* action = menuChoose(*this, SPELL);
+    Spell* spell = dynamic_cast<Spell*>(action);
     if (spell == nullptr){
         return;
     }
-    (*spell)(game.enemyField, *this);
+    spell->cast(game.enemyField, game.playerField, *this);
 };
 
 void Character::item(Game& game){

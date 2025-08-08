@@ -17,7 +17,7 @@ class Trait : public Action{
     {}
 
     
-    virtual void effect(std::vector<Enemy>& targetInv, Player& player) = 0;
+    virtual void exhibit(std::vector<Enemy>& enemies, std::vector<Player>& allies, Player& player) = 0;
     
 
 };

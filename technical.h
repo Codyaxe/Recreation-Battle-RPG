@@ -6,6 +6,8 @@
 #include <windows.h>
 #include "character.h"
 
+using Inventory = Action;
+
 const std::string RESET = "\033[0m";
 const std::string HIGHLIGHT = "\033[47;30m";
 const std::string actions[6] = { "Attack", "Defend", "Spell", "Item", "Summon", "Skip" };
@@ -41,13 +43,11 @@ class Game{
 
 void displayMenu(int selectedIndex, bool resetDisplay = true);
 void displayTargetMenu(int selectedIndex, std::vector<Character>& targetInv, const std::string& name, const int& type);
-template <typename T>
-void displayChooseMenu(int selectedIndex, std::vector<T*>& inv, const int& type);
+void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const int& type);
 void displayPlayerSelect(int selectedIndex, std::vector<Player*>& playerInv);
 int menu(Game& game, Player& player);
 Action* menuChoose(Character& player, const int& type);
-template <typename T>
-T* menuChooseHelper(std::vector<T*>& inv,const int& type);
+Action* menuChooseHelper(std::vector<Action*>& inv,const int& type);
 int menuTarget(std::vector<Character>& targetInv, const std::string& name, const int& type);
 int selectPlayer(std::vector<Player*>& playerInv);
 void menuPlayer(Game& game);

@@ -8,12 +8,7 @@
 #include <cstdint>
 #include "spells.h"
 
-class Attack;
-class Summon;
-class Item;
-class Debuff;
-class Buff;
-class Trait;
+class Action;
 class Game;
 
 //Bitmask
@@ -32,13 +27,13 @@ constexpr size_t flagCount = static_cast<size_t>(State::Count);
 class Character{
 
     public:
-    std::vector<Spell*> spellInv;
-    std::vector<Attack*> attackInv;
-    std::vector<Summon*> summonInv;
-    std::vector<Item*> itemInv;
-    std::vector<Debuff*> debuffInv;
-    std::vector<Buff*> buffInv;
-    std::vector<Trait*> traitInv;
+    std::vector<Action*> spellInv;
+    std::vector<Action*> attackInv;
+    std::vector<Action*> summonInv;
+    std::vector<Action*> itemInv;
+    std::vector<Action*> debuffInv;
+    std::vector<Action*> buffInv;
+    std::vector<Action*> traitInv;
     std::string name;
     int health;
     int defense;

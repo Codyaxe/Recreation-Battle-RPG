@@ -15,7 +15,7 @@ class Action {
 
     Action();
     Action(std::string name_, std::string description_);
-    virtual void operator()(std::vector<Enemy>& targetInv, Character& player) = 0;
+    virtual void operator()(std::vector<Enemy>& enemies, std::vector<Player>& allies, Character& player) = 0;
 
 };
 

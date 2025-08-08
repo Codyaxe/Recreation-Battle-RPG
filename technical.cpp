@@ -49,8 +49,7 @@ void displayMenu(int selectedIndex, bool resetDisplay) {
     std::cout.flush(); 
 }
 
-template <typename T>
-void displayChooseMenu(int selectedIndex, std::vector<T*>& inv, const int& type) {
+void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const int& type) {
 
     switch(type){
         case SPELL:
@@ -79,7 +78,7 @@ void displayChooseMenu(int selectedIndex, std::vector<T*>& inv, const int& type)
     std::cout.flush(); 
 }
 
-void displayTargetMenu(int iter, int selectedIndex, std::vector<Enemy*>& targetInv, const std::string& name, const int& type) {
+void displayTargetMenu(int iter, int selectedIndex, std::vector<Enemy*>& enemies, const std::string& name, const int& type) {
 
     switch(type){
         case SPELL:
@@ -96,11 +95,11 @@ void displayTargetMenu(int iter, int selectedIndex, std::vector<Enemy*>& targetI
         break;
     }
     
-    for (int i = 0; i < targetInv.size(); ++i) {
+    for (int i = 0; i < enemies.size(); ++i) {
         if (i == selectedIndex) {
-            std::cout << " > " << HIGHLIGHT << targetInv[i]->name << RESET << '\n';
+            std::cout << " > " << HIGHLIGHT << enemies[i]->name << RESET << '\n';
         } else {
-            std::cout << "   " << targetInv[i]->name << '\n';
+            std::cout << "   " << enemies[i]->name << '\n';
         }
     }
 
@@ -108,13 +107,13 @@ void displayTargetMenu(int iter, int selectedIndex, std::vector<Enemy*>& targetI
     std::cout.flush(); 
 }
 
-void displayPlayerSelect(int selectedIndex, std::vector<Player*>& playerInv) {
+void displayPlayerSelect(int selectedIndex, std::vector<Player*>& allies) {
     clearScreen();
-    for (int i = 0; i < playerInv.size(); ++i) {
+    for (int i = 0; i < allies.size(); ++i) {
         if (i == selectedIndex) {
-            std::cout << " > " << HIGHLIGHT << playerInv[i]->name << RESET << '\n';
+            std::cout << " > " << HIGHLIGHT << allies[i]->name << RESET << '\n';
         } else {
-            std::cout << "   " << playerInv[i]->name << '\n';
+            std::cout << "   " << allies[i]->name << '\n';
         }
     }
 
@@ -238,8 +237,7 @@ Action* menuChoose(Character& player, const int& type){
     return nullptr;
 }
 
-template <typename T>
-T* menuChooseHelper(std::vector<T*>& inv,const int& type){
+Action* menuChooseHelper(std::vector<Action*>& inv,const int& type){
     int count = 0;
     displayChooseMenu(count, inv, type);
     
@@ -282,9 +280,9 @@ T* menuChooseHelper(std::vector<T*>& inv,const int& type){
     }
 }
 
-int menuTarget(int iter, std::vector<Enemy*>& targetInv, const std::string& name, const int& type){
+int menuTarget(int iter, std::vector<Enemy*>& enemies, const std::string& name, const int& type){
     int count = 0;
-    displayTargetMenu(iter, count, targetInv, name, type);
+    displayTargetMenu(iter, count, enemies, name, type);
     
     INPUT_RECORD inputRecord;
     DWORD eventsRead;
@@ -302,18 +300,18 @@ int menuTarget(int iter, std::vector<Enemy*>& targetInv, const std::string& name
                         return EXIT;
                         
                     case VK_UP:
-                        count = (count - 1 + targetInv.size()) % targetInv.size();
-                        displayTargetMenu(iter, count, targetInv, name, type);
+                        count = (count - 1 + enemies.size()) % enemies.size();
+                        displayTargetMenu(iter, count, enemies, name, type);
                         break;
                         
                     case VK_DOWN:
-                        count = (count + 1) % targetInv.size();
-                        displayTargetMenu(iter, count, targetInv, name, type);
+                        count = (count + 1) % enemies.size();
+                        displayTargetMenu(iter, count, enemies, name, type);
                         break;
                         
                     case VK_RETURN:
                         clearScreen();
-                        std::cout << "Targeting: " << targetInv[count]->name << "\n";
+                        std::cout << "Targeting: " << enemies[count]->name << "\n";
                         return count;
                         break;
 
@@ -325,10 +323,10 @@ int menuTarget(int iter, std::vector<Enemy*>& targetInv, const std::string& name
     }
 }
 
-int selectPlayer(std::vector<Player*>& playerInv){
+int selectPlayer(std::vector<Player*>& allies){
 
     int count = 0;
-    displayPlayerSelect(count, playerInv);
+    displayPlayerSelect(count, allies);
     
     INPUT_RECORD inputRecord;
     DWORD eventsRead;
@@ -347,18 +345,18 @@ int selectPlayer(std::vector<Player*>& playerInv){
                         return EXIT;
                         
                     case VK_UP:
-                        count = (count - 1 + playerInv.size()) % playerInv.size();
-                        displayPlayerSelect(count, playerInv);
+                        count = (count - 1 + allies.size()) % allies.size();
+                        displayPlayerSelect(count, allies);
                         break;
                         
                     case VK_DOWN:
-                        count = (count + 1) % playerInv.size();
-                        displayPlayerSelect(count, playerInv);
+                        count = (count + 1) % allies.size();
+                        displayPlayerSelect(count, allies);
                         break;
                         
                     case VK_RETURN:
                         clearScreen();
-                        std::cout << "Selecting: " << playerInv[count]->name << "\n";
+                        std::cout << "Selecting: " << allies[count]->name << "\n";
                         Sleep(1000);
                         return count;
                         break;
@@ -391,9 +389,9 @@ void menuPlayer(Game& game){
     }
 }
 
-std::vector<int> chooseTarget(std::vector<Enemy>& targetInv, std::string& name, int numberofTargets, bool targetPlayer){
+std::vector<int> chooseTarget(std::vector<Enemy>& enemies, std::string& name, int numberofTargets, bool targetPlayer){
     std::vector<Enemy*> tracker;
-    for(auto& enemy : targetInv){
+    for(auto& enemy : enemies){
         tracker.push_back(&enemy);
     }
 
