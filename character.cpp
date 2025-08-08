@@ -46,28 +46,48 @@ bool Character::hasState(State flag) const {
     return states.test(static_cast<size_t>(flag));
 }
 
-void Character::attack(Game& game){
+void Player::attack(Game& game){
 
 };
 
-void Character::defend(Game& game){
+void Player::defend(Game& game){
 
 };
 
-void Character::spell(Game& game){
+void Player::spell(Game& game){
     Action* action = menuChoose(*this, SPELL);
     Spell* spell = dynamic_cast<Spell*>(action);
     if (spell == nullptr){
         return;
     }
-    spell->cast(game.enemyField, game.playerField, *this);
+    spell->cast(game.enemies, game.allies, *this);
 };
 
-void Character::item(Game& game){
+void Player::item(Game& game){
 
 };
 
-void Character::summon(Game& game){
+void Player::summon(Game& game){
+
+};
+
+void Enemy::attack(Game& game){
+
+};
+
+void Enemy::defend(Game& game){
+
+};
+
+void Enemy::spell(Game& game){
+
+};
+
+void Enemy::item(Game& game){
+
+};
+
+void Enemy::summon(Game& game){
 
 };
 

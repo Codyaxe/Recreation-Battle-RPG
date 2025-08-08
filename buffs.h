@@ -17,7 +17,7 @@ class Buff : public Action{
     {}
 
     
-    virtual void buff(std::vector<Enemy>& enemies, std::vector<Player>& allies, Player& player) = 0;
+    virtual void buff(std::vector<Character*>& enemies, std::vector<Character*>& allies, Player& player) = 0;
     
 
 };

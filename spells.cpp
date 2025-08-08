@@ -27,13 +27,13 @@ class Fireball : public Spell {
     Spell(name_, description_)
     {}
 
-    void cast(std::vector<Enemy>& enemies, std::vector<Player>& allies, Character& player) override {
-        std::vector<int> targets = chooseTarget(enemies, name, 1);
+    void cast(std::vector<Character*>& enemies, std::vector<Character*>& allies, Character& player) override {
+        std::vector<int> targets = chooseTarget(enemies, allies, name, 1, ENEMIES, SPELL);
         applyDamage(enemies[targets[0]], 150, FIRE);
     }
 
-    void operator()(std::vector<Enemy>& enemy, std::vector<Player>& allies, Character& player) override {
-        cast(enemy, allies player);
+    void operator()(std::vector<Character*>& enemy, std::vector<Character*>& allies, Character& player) override {
+        cast(enemy, allies, player);
     }
  
 };

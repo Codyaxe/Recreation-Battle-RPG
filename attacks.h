@@ -17,7 +17,7 @@ class Attack : public Action{
     {}
 
     
-    virtual void initiate(std::vector<Enemy>& enemies, std::vector<Player>& allies, Player& player) = 0;
+    virtual void initiate(std::vector<Character*>& enemies, std::vector<Character*>& allies, Player& player) = 0;
     
 
 };

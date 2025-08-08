@@ -55,11 +55,11 @@ class Character{
 
     bool hasState(State flag) const;
 
-    void attack(Game& game);
-    void defend(Game& game);
-    void spell(Game& game);
-    void item(Game& game);
-    void summon(Game& game);
+    virtual void attack(Game& game) = 0;
+    virtual void defend(Game& game) = 0;
+    virtual void spell(Game& game) = 0;
+    virtual void item(Game& game) = 0;
+    virtual void summon(Game& game) = 0;
 
 
 };
@@ -77,6 +77,12 @@ class Player : public Character{
     Player(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_, 
     int resistance_, int weakness_, int barrier_, int shield_, int armor_);
 
+    void attack(Game& game) override;
+    void defend(Game& game) override;
+    void spell(Game& game) override;
+    void item(Game& game) override;
+    void summon(Game& game) override;
+
 };
 
 class Enemy : public Character{
@@ -84,6 +90,13 @@ class Enemy : public Character{
     public:
 
     Enemy();
+
+    void attack(Game& game) override;
+    void defend(Game& game) override;
+    void spell(Game& game) override;
+    void item(Game& game) override;
+    void summon(Game& game) override;
+
 };
 
 

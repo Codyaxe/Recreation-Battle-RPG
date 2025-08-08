@@ -24,6 +24,12 @@ enum Target_Type{
     TRAIT = 16
 };
 
+enum Target_Group{
+    ENEMIES = 50,
+    ALLIES = 51,
+    BOTH = 52,
+};
+
 enum Return_Flags{
     EXIT = -1,
     SKIP = -2
@@ -34,24 +40,24 @@ void clearScreen();
 class Game{
     public:
 
-    std::vector<Enemy> enemyField;
-    std::vector<Player> playerField;
+    std::vector<Character*> enemies;
+    std::vector<Character*> allies;
 
     Game();
     ~Game();
 };
 
 void displayMenu(int selectedIndex, bool resetDisplay = true);
-void displayTargetMenu(int selectedIndex, std::vector<Character>& targetInv, const std::string& name, const int& type);
+void displayTargetMenu(int selectedIndex, std::vector<Character*>& targets, const std::string& name, const int& type);
 void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const int& type);
-void displayPlayerSelect(int selectedIndex, std::vector<Player*>& playerInv);
+void displayPlayerSelect(int selectedIndex, std::vector<Player*>& allies);
 int menu(Game& game, Player& player);
 Action* menuChoose(Character& player, const int& type);
 Action* menuChooseHelper(std::vector<Action*>& inv,const int& type);
-int menuTarget(std::vector<Character>& targetInv, const std::string& name, const int& type);
-int selectPlayer(std::vector<Player*>& playerInv);
+int menuTarget(std::vector<Character*>& targets, const std::string& name, const int& type);
+int selectPlayer(std::vector<Player*>& allies);
 void menuPlayer(Game& game);
-std::vector<int> chooseTarget(std::vector<Enemy>& targetInv, std::string& name, int numberofTargets, bool targetPlayer = false);
+std::vector<int> chooseTarget(std::vector<Character*>& enemies, std::vector<Character*>& allies, std::string& name, int numberofTargets, int groupTarget, int type);
 
 
 class Interface{

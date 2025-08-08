@@ -17,7 +17,7 @@ class Summon : public Action{
     {}
 
     
-    virtual void call(std::vector<Enemy>& enemies, std::vector<Player>& allies, Player& player) = 0;
+    virtual void call(std::vector<Character*>& enemies, std::vector<Character*>& allies, Player& player) = 0;
     
 
 };

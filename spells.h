@@ -17,7 +17,7 @@ class Spell : public Action{
     {}
 
     
-    virtual void cast(std::vector<Enemy>& enemies, std::vector<Player>& allies, Character& caster) = 0;
+    virtual void cast(std::vector<Character*>& enemies,std::vector<Character*>& allies, Character& player) = 0;
     
 
 };

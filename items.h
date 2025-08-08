@@ -17,7 +17,7 @@ class Item : public Action{
     {}
 
     
-    virtual void use(std::vector<Enemy>& enemies, std::vector<Player>& allies, Player& player) = 0;
+    virtual void use(std::vector<Character*>& enemies, std::vector<Character*>& allies, Player& player) = 0;
     
 
 };

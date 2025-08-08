@@ -55,11 +55,11 @@ enum SpellType{
     FATE = 76
 };
 
-void applyDamage(Character& target, int damage, int damageType);
-void applyHeal(Character& target);
-void gainStats(Character& target);
-void applyBuff(Character& target);
-void applyDebuff(Character& target);
+void applyDamage(Character* target, int damage, int damageType);
+void applyHeal(Character* target);
+void gainStats(Character* target);
+void applyBuff(Character* target);
+void applyDebuff(Character* target);
 
 
 #endif
