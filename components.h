@@ -50,6 +50,18 @@ enum class TargetFaction
     NONE
 };
 
+// Flags to detemine the current action
+enum class ActionType
+{
+    SPELL,
+    ATTACK,
+    SUMMON,
+    ITEM,
+    DEBUFF,
+    BUFF,
+    TRAIT
+};
+
 // Various effect types
 enum class EffectType
 {
@@ -62,6 +74,17 @@ enum class EffectType
     STATS,
     MOVE,
     MISC
+};
+
+enum class DamageBasis
+{
+    POWER,
+    MAGIC,
+    HEALTH,
+    DEFENSE,
+    SPEED,
+    ACCURACY,
+    MANA
 };
 
 // Component execution phases
@@ -114,7 +137,7 @@ class ConditionContainer
 
 struct Observer
 {
-    std::string actionType;
+    ActionType type;
     std::string name;
     Character& caster;
     std::vector<Character*>& enemies;
@@ -131,7 +154,15 @@ struct Observer
 class DynamicValue
 {
   public:
-    int expression;
+    int value;
+    double percentage;
+    DamageBasis basis;
+
+    // Constructor declarations
+    DynamicValue();
+    DynamicValue(int fixedValue);
+    DynamicValue(int fixedValue, DamageBasis damageBasis);
+    DynamicValue(int fixedValue, double percentageValue, DamageBasis damageBasis);
 
     void calculate(Observer& context);
 };
@@ -146,8 +177,8 @@ class Components
 {
   public:
     virtual ~Components() = default;
-    virtual void execute(Observer& context) = 0;
-    virtual bool shouldExecute(const Observer& context) const = 0;
+    virtual bool execute(Observer& context) = 0;
+    virtual bool shouldExecute(const Observer& context) const;
     virtual ComponentCategory getCategory() const = 0;
     virtual std::string getComponentType() const = 0;
 
@@ -175,7 +206,7 @@ class TargetingComponent : public Components
 
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
-    void execute(Observer& context) override;
+    bool execute(Observer& context) override;
 };
 
 class EffectComponent : public Components
@@ -189,6 +220,14 @@ class EffectComponent : public Components
         DynamicValue primaryValue;
         DynamicValue secondaryValue;
         ExtraAttributes extras;
+
+        PrimaryEffect();
+        PrimaryEffect(EffectType effectType, const std::string& subTypeName = "");
+        PrimaryEffect(EffectType effectType, const std::string& subTypeName,
+                      const DynamicValue& primary);
+        PrimaryEffect(EffectType effectType, const std::string& subTypeName,
+                      const DynamicValue& primary, const DynamicValue& secondary,
+                      const ExtraAttributes& extraAttribs);
     };
 
     class ConditionalEffect
@@ -197,6 +236,13 @@ class EffectComponent : public Components
         PrimaryEffect primary;
         std::vector<GameCondition> gameConditions;
         std::vector<TargetCondition> targetConditions;
+        ConditionLogic targetingConditionLogic;
+
+        ConditionalEffect();
+        ConditionalEffect(const PrimaryEffect& effect);
+        ConditionalEffect(const PrimaryEffect& effect, const std::vector<GameCondition>& gameReqs,
+                          const std::vector<TargetCondition>& targetReqs,
+                          const ConditionLogic& conditionLogic);
     };
 
     class DelayedEffect
@@ -204,6 +250,9 @@ class EffectComponent : public Components
       public:
         PrimaryEffect primary;
         int turn;
+
+        DelayedEffect();
+        DelayedEffect(const PrimaryEffect& effect, int delayTurns);
     };
 
     std::vector<PrimaryEffect> primaryEffects;
@@ -212,7 +261,7 @@ class EffectComponent : public Components
 
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
-    void execute(Observer& context) override;
+    bool execute(Observer& context) override;
 };
 
 class UIComponent : public Components
@@ -223,7 +272,12 @@ class UIComponent : public Components
       public:
         std::string text;
         bool typingMode;
-        int time;
+        int delay;
+
+        // Constructor declarations
+        PrimaryText();
+        PrimaryText(const std::string& textContent);
+        PrimaryText(const std::string& textContent, bool enableTyping, int delayTime);
     };
 
     class ConditionalText
@@ -232,6 +286,13 @@ class UIComponent : public Components
         PrimaryText primary;
         std::vector<GameCondition> gameConditions;
         std::vector<TargetCondition> targetConditions;
+        ConditionLogic targetingConditionLogic;
+
+        ConditionalText();
+        ConditionalText(const PrimaryText& text);
+        ConditionalText(const PrimaryText& text, const std::vector<GameCondition>& gameReqs,
+                        const std::vector<TargetCondition>& targetReqs,
+                        const ConditionLogic& conditionLogic);
     };
 
     std::vector<PrimaryText> primaryTexts;
@@ -239,7 +300,7 @@ class UIComponent : public Components
 
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
-    void execute(Observer& context) override;
+    bool execute(Observer& context) override;
 };
 
 #endif

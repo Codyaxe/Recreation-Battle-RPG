@@ -4,24 +4,6 @@
 #include "spelleffects.h"
 #include "technical.h"
 
-// class Spell{
-
-//     private:
-
-//     std::string name_;
-//     std::string description_;
-//     EffectFunction effect_;
-
-//
-
-//     Spell(std::string& name, std::string& description) :
-//     name_(name), description_(description), effect_(effect)
-//     {}
-
-//     virtual void effect(Character& target) = 0;
-
-// };
-
 Spell::Spell(const std::string& name_, const std::string& description_)
     : Action(name_, description_)
 {
@@ -32,9 +14,11 @@ void Spell::addComponent(std::unique_ptr<Components> component)
     components.push_back(std::move(component));
 }
 
-void Spell::cast(Game& game, Character& player)
+bool Spell::cast(Game& game, Character& player)
 {
     Observer context(player, game);
+    context.name = name;
+    context.type = ActionType::SPELL;
 
     // Sort components by execution priority
     std::sort(components.begin(), components.end(),
@@ -46,7 +30,10 @@ void Spell::cast(Game& game, Character& player)
     {
         if (component->canExecute(context))
         {
-            component->execute(context);
+            if (!component->execute(context))
+            {
+                return false;
+            }
 
             // Stop execution if spell failed and component is not optional
             if (context.states.game.has(GameCondition::SpellFailed) && !component->isOptional)
@@ -56,14 +43,49 @@ void Spell::cast(Game& game, Character& player)
             }
         }
     }
+    return true;
 }
 
-Fireball::Fireball() : Spell("Fireball", "A fiery blast against an enemy.") {}
-
-void Fireball::cast(Game& game, Character& player)
+/*For making string cost cheaper in case I would reuse this. Could use string_view but this one is
+/ cheaper */
+namespace FireballText
 {
-    std::vector<int> targets = chooseTarget(game.enemies, game.allies, name, 1, ENEMIES, SPELL);
-    applyDamage(game.enemies[targets[0]], 150, FIRE);
+static const char* const TEXTS[] = {
+    "Flames swirl and gather in your hands, forming a searing sphere of molten energy.",
+    "The fireball crackles with power, casting flickering light across the battlefield.",
+    "With a sharp thrust, you launch it toward your chosen foe.",
+    "It streaks through the air, leaving a shimmering trail of heat and smoke in its wake.",
+    "Upon impact, it bursts in a thunderous explosion, engulfing the target in a roaring inferno!"};
+static constexpr size_t TEXT_COUNT = sizeof(TEXTS) / sizeof(TEXTS[0]);
+} // namespace FireballText
+
+// Template Spell
+Fireball::Fireball() : Spell("Fireball", "A fiery blast against an enemy.")
+{
+    // Targeting component
+    auto targeting = std::make_unique<TargetingComponent>();
+    targeting->mode = TargetSelectionMode::MANUAL;
+    targeting->scope = TargetScope::SINGLE;
+    targeting->faction = TargetFaction::ENEMIES;
+    targeting->executionPriority = 1;
+    addComponent(std::move(targeting));
+
+    // Effect component
+    auto effect = std::make_unique<EffectComponent>();
+    auto primaryFX = EffectComponent::PrimaryEffect(EffectType::DAMAGE, "Fire", DynamicValue(200));
+    effect->primaryEffects.push_back(primaryFX);
+    effect->executionPriority = 2;
+    addComponent(std::move(effect));
+
+    // UI component
+    auto ui = std::make_unique<UIComponent>();
+    ui->primaryTexts.reserve(FireballText::TEXT_COUNT); // Pre-allocate for efficiency
+    for (size_t i = 0; i < FireballText::TEXT_COUNT; ++i)
+    {
+        ui->primaryTexts.push_back(UIComponent::PrimaryText(FireballText::TEXTS[i], true, 50));
+    }
+    ui->executionPriority = 3;
+    addComponent(std::move(ui));
 }
 
 void Fireball::operator()(Game& game, Character& player) { cast(game, player); }

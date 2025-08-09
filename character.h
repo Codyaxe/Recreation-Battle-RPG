@@ -49,6 +49,8 @@ class Character
     std::string name;
     int health;
     int defense;
+    int power;
+    int magic;
     int speed;
     int accuracy;
     int mana;

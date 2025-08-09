@@ -17,7 +17,7 @@ class Spell : public Action
 
     void addComponent(std::unique_ptr<Components> component);
 
-    virtual void cast(Game& game, Character& player);
+    virtual bool cast(Game& game, Character& player);
 };
 
 class Fireball : public Spell
@@ -25,8 +25,6 @@ class Fireball : public Spell
 
   public:
     Fireball();
-
-    void cast(Game& game, Character& player) override;
 
     void operator()(Game& game, Character& player) override;
 };

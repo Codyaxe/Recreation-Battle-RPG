@@ -60,24 +60,24 @@ void displayMenu(int selectedIndex, Player& player, bool resetDisplay)
     std::cout.flush();
 }
 
-void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const int& type)
+void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const ActionType& type)
 {
-
+    clearScreen();
     switch (type)
     {
-    case SPELL:
+    case ActionType::SPELL:
         std::cout << "Choose a spell: \n";
         break;
 
-    case ATTACK:
+    case ActionType::ATTACK:
         std::cout << "Choose an attack: \n";
         break;
 
-    case SUMMON:
+    case ActionType::SUMMON:
         std::cout << "Choose a summon: \n";
         break;
 
-    case ITEM:
+    case ActionType::ITEM:
         std::cout << "Choose an item: \n";
         break;
 
@@ -103,30 +103,30 @@ void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const int& 
 }
 
 void displayTargetMenu(int iter, int selectedIndex, std::vector<Character*>& targets,
-                       const std::string& name, const int& type)
+                       Observer& context)
 {
     clearScreen();
 
-    switch (type)
+    switch (context.type)
     {
-    case SPELL:
-        std::cout << "Choose target" << iter + 1 << " to cast " << name << " on: \n";
+    case ActionType::SPELL:
+        std::cout << "Choose target " << iter + 1 << " to cast " << context.name << " on: \n";
         break;
 
-    case ATTACK:
-        std::cout << "Choose target" << iter + 1 << " to initiate " << name << " on: \n";
+    case ActionType::ATTACK:
+        std::cout << "Choose target " << iter + 1 << " to initiate " << context.name << " on: \n";
         break;
 
-    case SUMMON:
-        std::cout << "Choose target" << iter + 1 << " to summon " << name << " on: \n";
+    case ActionType::SUMMON:
+        std::cout << "Choose target " << iter + 1 << " to summon " << context.name << " on: \n";
         break;
 
-    case ITEM:
-        std::cout << "Choose target" << iter + 1 << " to use " << name << " on: \n";
+    case ActionType::ITEM:
+        std::cout << "Choose target " << iter + 1 << " to use " << context.name << " on: \n";
         break;
 
     default:
-        std::cout << "Choose target" << iter + 1 << " to [REDACTED] " << name << " on: \n";
+        std::cout << "Choose target " << iter + 1 << " to [REDACTED] " << context.name << " on: \n";
         ;
         break;
     }
@@ -248,50 +248,50 @@ int menu(Game& game, Player& player)
     }
 }
 
-Action* menuChoose(Character& player, const int& type)
+Action* menuChoose(Character& player, const ActionType& type)
 {
     switch (type)
     {
-    case SPELL:
+    case ActionType::SPELL:
     {
         auto& inv = player.spellInv;
-        return menuChooseHelper(inv, SPELL);
+        return menuChooseHelper(inv, ActionType::SPELL);
     }
 
-    case ATTACK:
+    case ActionType::ATTACK:
     {
         auto& inv = player.attackInv;
-        return menuChooseHelper(inv, ATTACK);
+        return menuChooseHelper(inv, ActionType::ATTACK);
     }
 
-    case SUMMON:
+    case ActionType::SUMMON:
     {
         auto& inv = player.summonInv;
-        return menuChooseHelper(inv, SUMMON);
+        return menuChooseHelper(inv, ActionType::SUMMON);
     }
 
-    case ITEM:
+    case ActionType::ITEM:
     {
         auto& inv = player.itemInv;
-        return menuChooseHelper(inv, ITEM);
+        return menuChooseHelper(inv, ActionType::ITEM);
     }
 
-    case DEBUFF:
+    case ActionType::DEBUFF:
     {
         auto& inv = player.debuffInv;
-        return menuChooseHelper(inv, DEBUFF);
+        return menuChooseHelper(inv, ActionType::DEBUFF);
     }
 
-    case BUFF:
+    case ActionType::BUFF:
     {
         auto& inv = player.buffInv;
-        return menuChooseHelper(inv, BUFF);
+        return menuChooseHelper(inv, ActionType::BUFF);
     }
 
-    case TRAIT:
+    case ActionType::TRAIT:
     {
         auto& inv = player.traitInv;
-        return menuChooseHelper(inv, TRAIT);
+        return menuChooseHelper(inv, ActionType::TRAIT);
     }
 
     default:
@@ -300,7 +300,7 @@ Action* menuChoose(Character& player, const int& type)
     return nullptr;
 }
 
-Action* menuChooseHelper(std::vector<Action*>& inv, const int& type)
+Action* menuChooseHelper(std::vector<Action*>& inv, const ActionType& type)
 {
     int count = 0;
     displayChooseMenu(count, inv, type);
@@ -337,6 +337,7 @@ Action* menuChooseHelper(std::vector<Action*>& inv, const int& type)
                 case VK_RETURN:
                     clearScreen();
                     std::cout << "Choosing: " << inv[count]->name << "\n";
+                    Sleep(1000);
                     return inv[count];
                     break;
 
@@ -348,10 +349,10 @@ Action* menuChooseHelper(std::vector<Action*>& inv, const int& type)
     }
 }
 
-int menuTarget(int iter, std::vector<Character*>& targets, const std::string& name, const int& type)
+int menuTarget(int iter, std::vector<Character*>& targets, Observer& context)
 {
     int count = 0;
-    displayTargetMenu(iter, count, targets, name, type);
+    displayTargetMenu(iter, count, targets, context);
 
     INPUT_RECORD inputRecord;
     DWORD eventsRead;
@@ -374,12 +375,12 @@ int menuTarget(int iter, std::vector<Character*>& targets, const std::string& na
 
                 case VK_UP:
                     count = (count - 1 + targets.size()) % targets.size();
-                    displayTargetMenu(iter, count, targets, name, type);
+                    displayTargetMenu(iter, count, targets, context);
                     break;
 
                 case VK_DOWN:
                     count = (count + 1) % targets.size();
-                    displayTargetMenu(iter, count, targets, name, type);
+                    displayTargetMenu(iter, count, targets, context);
                     break;
 
                 case VK_RETURN:
@@ -472,54 +473,103 @@ void menuPlayer(Game& game)
     }
 }
 
-std::vector<int> chooseTarget(std::vector<Character*>& enemies, std::vector<Character*>& allies,
-                              std::string& name, int numberofTargets, int groupTarget, int type)
+bool chooseTarget(Observer& context, TargetingComponent& targetingComponent)
 {
-    std::vector<Character*> candidates;
+    std::vector<Character*> potentialTargets;
+    std::vector<Character*> validTargets;
 
-    switch (groupTarget)
+    if (targetingComponent.faction == TargetFaction::ENEMIES ||
+        targetingComponent.faction == TargetFaction::BOTH)
     {
-    case ENEMIES:
-        for (auto& enemy : enemies)
+        potentialTargets.insert(potentialTargets.end(), context.enemies.begin(),
+                                context.enemies.end());
+    }
+    if (targetingComponent.faction == TargetFaction::ALLIES ||
+        targetingComponent.faction == TargetFaction::BOTH)
+    {
+        potentialTargets.insert(potentialTargets.end(), context.allies.begin(),
+                                context.allies.end());
+    }
+    if (targetingComponent.gameConditions.empty() && targetingComponent.targetConditions.empty())
+    {
+        validTargets = potentialTargets;
+    }
+    else if (targetingComponent.targetingConditionLogic == ConditionLogic::AND)
+    {
+        for (const auto& target : potentialTargets)
         {
-            candidates.push_back(enemy);
+            bool allConditionsMet = true;
+
+            for (const auto& condition : targetingComponent.gameConditions)
+            {
+                if (!checkTargetHasCondition(condition, target))
+                {
+                    allConditionsMet = false;
+                    break;
+                }
+            }
+
+            for (const auto& condition : targetingComponent.targetConditions)
+            {
+                if (!checkTargetHasCondition(condition, target))
+                {
+                    allConditionsMet = false;
+                    break;
+                }
+            }
+
+            if (allConditionsMet)
+            {
+                validTargets.push_back(target);
+            }
         }
-        break;
-    case ALLIES:
-        for (auto& ally : allies)
+    }
+    else
+    {
+        for (const auto& target : potentialTargets)
         {
-            candidates.push_back(ally);
+
+            for (const auto& condition : targetingComponent.gameConditions)
+            {
+
+                if (checkTargetHasCondition(condition, target))
+                {
+                    validTargets.push_back(target);
+                    break;
+                }
+            }
+
+            for (const auto& condition : targetingComponent.targetConditions)
+            {
+
+                if (checkTargetHasCondition(condition, target))
+                {
+                    validTargets.push_back(target);
+                    break;
+                }
+            }
         }
-        break;
-    case BOTH:
-        for (auto& enemy : enemies)
-        {
-            candidates.push_back(enemy);
-        }
-        for (auto& ally : allies)
-        {
-            candidates.push_back(ally);
-        }
-        break;
     }
 
-    std::vector<int> targets;
-    int i = 0;
-    int selectedIndex;
-
-    while (i < numberofTargets)
+    if (!validTargets.empty())
     {
-        selectedIndex = menuTarget(i, candidates, name, type);
-        if (selectedIndex == EXIT)
-        {
-            return targets;
-        }
-        candidates.erase(candidates.begin() + selectedIndex);
-        targets.push_back(selectedIndex);
-        i++;
-    }
+        int i = 0;
+        int selectedIndex;
 
-    return targets;
+        while (i < targetingComponent.numberOfTargets)
+        {
+            selectedIndex = menuTarget(i, validTargets, context);
+            if (selectedIndex == EXIT)
+            {
+                return false;
+            }
+            context.currentTargets.push_back(validTargets[selectedIndex]);
+            validTargets.erase(validTargets.begin() + selectedIndex);
+            i++;
+        }
+        return true;
+    }
+    return true;
 };
 
 bool Interface::enableFlags()

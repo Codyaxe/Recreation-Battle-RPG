@@ -88,13 +88,16 @@ int Player::defend(Game& game)
 
 int Player::spell(Game& game)
 {
-    Action* action = menuChoose(*this, SPELL);
+    Action* action = menuChoose(*this, ActionType::SPELL);
     Spell* spell = dynamic_cast<Spell*>(action);
     if (spell == nullptr)
     {
         return CONTINUE_TURN;
     }
-    spell->cast(game, *this);
+    if (!spell->cast(game, *this))
+    {
+        return CONTINUE_TURN;
+    };
     return END_TURN; // Placeholder
 };
 

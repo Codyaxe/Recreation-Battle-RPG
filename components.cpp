@@ -38,7 +38,11 @@ bool evaluateTargets(Observer& context, TargetingComponent& targetingComponent)
         potentialTargets.insert(potentialTargets.end(), context.allies.begin(),
                                 context.allies.end());
     }
-    if (targetingComponent.targetingConditionLogic == ConditionLogic::AND)
+    if (targetingComponent.gameConditions.empty() && targetingComponent.targetConditions.empty())
+    {
+        validTargets = potentialTargets;
+    }
+    else if (targetingComponent.targetingConditionLogic == ConditionLogic::AND)
     {
         for (const auto& target : potentialTargets)
         {
@@ -125,6 +129,70 @@ bool checkTargetHasCondition(const TargetCondition& condition, Character* target
     return false;
 }
 
+// PrimaryEffect constructor implementations
+EffectComponent::PrimaryEffect::PrimaryEffect() = default;
+
+EffectComponent::PrimaryEffect::PrimaryEffect(EffectType effectType, const std::string& subTypeName)
+    : type(effectType), subType(subTypeName)
+{
+}
+
+EffectComponent::PrimaryEffect::PrimaryEffect(EffectType effectType, const std::string& subTypeName,
+                                              const DynamicValue& primary)
+    : type(effectType), subType(subTypeName), primaryValue(primary)
+{
+}
+
+EffectComponent::PrimaryEffect::PrimaryEffect(EffectType effectType, const std::string& subTypeName,
+                                              const DynamicValue& primary,
+                                              const DynamicValue& secondary,
+                                              const ExtraAttributes& extraAttribs)
+    : type(effectType), subType(subTypeName), primaryValue(primary), secondaryValue(secondary),
+      extras(extraAttribs)
+{
+}
+
+// ConditionalEffect constructor implementations
+EffectComponent::ConditionalEffect::ConditionalEffect() = default;
+
+EffectComponent::ConditionalEffect::ConditionalEffect(const PrimaryEffect& effect) : primary(effect)
+{
+}
+
+EffectComponent::ConditionalEffect::ConditionalEffect(
+    const PrimaryEffect& effect, const std::vector<GameCondition>& gameReqs,
+    const std::vector<TargetCondition>& targetReqs, const ConditionLogic& conditionLogic)
+    : primary(effect), gameConditions(gameReqs), targetConditions(targetReqs),
+      targetingConditionLogic(conditionLogic)
+{
+}
+
+// DelayedEffect constructor implementations
+EffectComponent::DelayedEffect::DelayedEffect() : turn(0) {}
+
+EffectComponent::DelayedEffect::DelayedEffect(const PrimaryEffect& effect, int delayTurns)
+    : primary(effect), turn(delayTurns)
+{
+}
+
+// DynamicValue constructor implementations
+DynamicValue::DynamicValue() : value(100), percentage(1.0), basis(DamageBasis::POWER) {}
+
+DynamicValue::DynamicValue(int fixedValue)
+    : value(fixedValue), percentage(1.0), basis(DamageBasis::POWER)
+{
+}
+
+DynamicValue::DynamicValue(int fixedValue, DamageBasis damageBasis)
+    : value(fixedValue), basis(damageBasis)
+{
+}
+
+DynamicValue::DynamicValue(int fixedValue, double percentageValue, DamageBasis damageBasis)
+    : value(fixedValue), percentage(percentageValue), basis(damageBasis)
+{
+}
+
 // Components base class implementations
 bool Components::canExecute(const Observer& context) const
 {
@@ -188,7 +256,7 @@ ComponentCategory TargetingComponent::getCategory() const { return ComponentCate
 
 std::string TargetingComponent::getComponentType() const { return "TargetingComponent"; }
 
-void TargetingComponent::execute(Observer& context)
+bool TargetingComponent::execute(Observer& context)
 {
     if (scope == TargetScope::SINGLE)
     {
@@ -201,16 +269,15 @@ void TargetingComponent::execute(Observer& context)
     if (context.enemies.empty() && faction == TargetFaction::ENEMIES)
     {
         onExecutionFailed(context, "No enemies available to target");
-        return;
+        return true;
     }
     if (mode == TargetSelectionMode::MANUAL)
     {
-        chooseTarget(context.enemies, context.allies, context.name, numberOfTargets,
-                     static_cast<int>(faction), SPELL);
+        return chooseTarget(context, *this);
     }
     else
     {
-        evaluateTargets(context, *this);
+        return evaluateTargets(context, *this);
     }
 }
 
@@ -219,12 +286,12 @@ ComponentCategory EffectComponent::getCategory() const { return ComponentCategor
 
 std::string EffectComponent::getComponentType() const { return "EffectComponent"; }
 
-void EffectComponent::execute(Observer& context)
+bool EffectComponent::execute(Observer& context)
 {
     if (context.currentTargets.empty() && context.scope != TargetScope::NONE)
     {
         onExecutionFailed(context, "No targets available for effects");
-        return;
+        return true;
     }
 
     // Apply primary effects
@@ -244,6 +311,34 @@ void EffectComponent::execute(Observer& context)
     {
         // Placeholder
     }
+    return true;
+}
+
+// PrimaryText constructor implementations
+UIComponent::PrimaryText::PrimaryText() : text(""), typingMode(false), delay(0) {}
+
+UIComponent::PrimaryText::PrimaryText(const std::string& textContent)
+    : text(textContent), typingMode(false), delay(0)
+{
+}
+
+UIComponent::PrimaryText::PrimaryText(const std::string& textContent, bool enableTyping,
+                                      int delayTime)
+    : text(textContent), typingMode(enableTyping), delay(delayTime)
+{
+}
+
+UIComponent::ConditionalText::ConditionalText() = default;
+
+UIComponent::ConditionalText::ConditionalText(const PrimaryText& effect) : primary(effect) {}
+
+UIComponent::ConditionalText::ConditionalText(const PrimaryText& text,
+                                              const std::vector<GameCondition>& gameReqs,
+                                              const std::vector<TargetCondition>& targetReqs,
+                                              const ConditionLogic& conditionLogic)
+    : primary(text), gameConditions(gameReqs), targetConditions(targetReqs),
+      targetingConditionLogic(conditionLogic)
+{
 }
 
 // UIComponent implementations
@@ -251,18 +346,115 @@ ComponentCategory UIComponent::getCategory() const { return ComponentCategory::U
 
 std::string UIComponent::getComponentType() const { return "UIComponent"; }
 
-void UIComponent::execute(Observer& context)
+bool UIComponent::execute(Observer& context)
 {
 
-    for (const auto& text : primaryTexts)
+    for (const auto& current : primaryTexts)
     {
-        // Text display logic will go here
+        if (current.typingMode)
+        {
+            const size_t batchSize = 3; // Batch based flushing
+            const auto& text = current.text;
+
+            for (size_t i = 0; i < text.size(); i += batchSize)
+            {
+                size_t end = std::min<int>(i + batchSize, text.size());
+                for (size_t j = i; j < end; ++j)
+                {
+                    std::cout << text[j];
+                }
+
+                std::cout.flush();
+                Sleep(current.delay);
+            }
+            std::cout << '\n';
+            Sleep(1000);
+        }
+        else
+        {
+            std::cout << current.text << '\n';
+            Sleep(1000);
+        }
     }
 
     // Display conditional texts based on spell state
     for (const auto& conditionalText : conditionalTexts)
     {
-        // Check conditions and display appropriate text
-        // e.g., "Critical hit!" or "Spell failed!"
+        bool shouldDisplay = false;
+
+        if (conditionalText.gameConditions.empty() && conditionalText.targetConditions.empty())
+        {
+            shouldDisplay = true;
+        }
+        else if (conditionalText.targetingConditionLogic == ConditionLogic::AND)
+        {
+            shouldDisplay = true;
+            for (const auto& condition : conditionalText.gameConditions)
+            {
+                if (!evaluate(context, condition))
+                {
+                    shouldDisplay = false;
+                    break;
+                }
+            }
+            if (shouldDisplay)
+            {
+                for (const auto& condition : conditionalText.targetConditions)
+                {
+                    if (!evaluate(context, condition))
+                    {
+                        shouldDisplay = false;
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (const auto& condition : conditionalText.gameConditions)
+            {
+                if (evaluate(context, condition))
+                {
+                    shouldDisplay = true;
+                    break;
+                }
+            }
+            if (!shouldDisplay)
+            {
+                for (const auto& condition : conditionalText.targetConditions)
+                {
+                    if (evaluate(context, condition))
+                    {
+                        shouldDisplay = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (shouldDisplay)
+        {
+            const auto& primary = conditionalText.primary;
+            if (primary.typingMode)
+            {
+                const size_t batchSize = 3; // Batch based flushing
+                for (size_t i = 0; i < primary.text.size(); i += batchSize)
+                {
+                    size_t end = std::min<size_t>(i + batchSize, primary.text.size());
+                    for (size_t j = i; j < end; ++j)
+                    {
+                        std::cout << primary.text[j];
+                    }
+                    std::cout.flush();
+                    Sleep(primary.delay);
+                }
+                std::cout << '\n';
+            }
+            else
+            {
+                std::cout << primary.text << '\n';
+            }
+        }
     }
+    return true;
 }
