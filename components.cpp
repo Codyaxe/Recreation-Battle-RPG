@@ -9,12 +9,6 @@ Observer::Observer(Character& c, Game& game)
     states.game = game.gameConditions;
 }
 
-bool evaluate(const Observer& context, const ConditionalType& condition)
-{
-    // ConditionalType evaluation
-    return false;
-}
-
 bool evaluate(const Observer& context, const GameCondition& condition)
 {
     // GameCondition evaluation

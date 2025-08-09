@@ -64,12 +64,6 @@ enum class EffectType
     MISC
 };
 
-// Various conditional flags
-enum class ConditionalType
-{
-
-};
-
 // Component execution phases
 enum class ComponentCategory
 {
@@ -142,7 +136,6 @@ class DynamicValue
     void calculate(Observer& context);
 };
 
-bool evaluate(const Observer& context, const ConditionalType& condition);
 bool evaluate(const Observer& context, const GameCondition& condition);
 bool evaluate(const Observer& context, const TargetCondition& condition);
 bool evaluateTargets(Observer& context, TargetingComponent& targetingComponent);
@@ -217,7 +210,6 @@ class EffectComponent : public Components
     std::vector<ConditionalEffect> conditionalEffects;
     std::vector<DelayedEffect> delayedEffects;
 
-    // Override base class methods
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
     void execute(Observer& context) override;
@@ -245,7 +237,6 @@ class UIComponent : public Components
     std::vector<PrimaryText> primaryTexts;
     std::vector<ConditionalText> conditionalTexts;
 
-    // Override base class methods
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
     void execute(Observer& context) override;
