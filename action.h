@@ -6,18 +6,18 @@
 class Character;
 class Enemy;
 class Player;
+class Game;
 
+class Action
+{
 
-class Action {
-
-    public:
+  public:
     std::string name;
     std::string description;
 
     Action();
     Action(const std::string& name_, const std::string& description_);
-    virtual void operator()(std::vector<Character*>& enemies, std::vector<Character*>& allies, Character& player) = 0;
-
+    virtual void operator()(Game& game, Character& player) = 0;
 };
 
 #endif

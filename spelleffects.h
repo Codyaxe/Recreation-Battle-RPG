@@ -1,11 +1,13 @@
 #ifndef SPELLSEFFECT_H
 #define SPELLSEFFECT_H
+#include <iostream>
 #include <string>
 #include <vector>
-#include <iostream>
+
 class Character;
 
-enum SpellType{
+enum SpellType
+{
     PHYSICAL = 30,
     FIRE = 31,
     WATER = 32,
@@ -13,7 +15,7 @@ enum SpellType{
     NATURE = 34,
     POISON = 35,
     ELECTRIC = 36,
-    GROUND  = 37,
+    GROUND = 37,
     PSYCHIC = 38,
     ROCK = 39,
     ICE = 40,
@@ -60,6 +62,5 @@ void applyHeal(Character* target);
 void gainStats(Character* target);
 void applyBuff(Character* target);
 void applyDebuff(Character* target);
-
 
 #endif

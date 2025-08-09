@@ -1,26 +1,23 @@
 #ifndef DEBUFFS_H
 #define DEBUFFS_H
 
+#include "action.h"
 #include <string>
 #include <vector>
-#include "action.h"
 
 class Character;
 class Player;
 class Enemy;
 
-class Debuff : public Action{
+class Debuff : public Action
+{
 
-    public:
+  public:
+    Debuff(const std::string& name_, const std::string& description_) : Action(name_, description_)
+    {
+    }
 
-    Debuff(const std::string& name_, const std::string& description_) : 
-    Action(name_,description_)
-    {}
-
-    
-    virtual void afflict(std::vector<Character*>& enemies, std::vector<Character*>& allies, Player& player) = 0;
-    
-
+    virtual void afflict(Game& game, Player& player) = 0;
 };
 
 #endif

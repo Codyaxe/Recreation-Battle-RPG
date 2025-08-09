@@ -1,26 +1,21 @@
 #ifndef ITEMS_H
 #define ITEMS_H
 
+#include "action.h"
 #include <string>
 #include <vector>
-#include "action.h"
 
 class Character;
 class Player;
 class Enemy;
 
-class Item : public Action{
+class Item : public Action
+{
 
-    public:
+  public:
+    Item(const std::string& name_, const std::string& description_) : Action(name_, description_) {}
 
-    Item(const std::string& name_, const std::string& description_) : 
-    Action(name_,description_)
-    {}
-
-    
-    virtual void use(std::vector<Character*>& enemies, std::vector<Character*>& allies, Player& player) = 0;
-    
-
+    virtual void use(Game& game, Player& player) = 0;
 };
 
 #endif

@@ -1,34 +1,34 @@
 #ifndef SPELLS_H
 #define SPELLS_H
 
+#include "action.h"
+#include "components.h"
+#include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
-#include "action.h"
 
-class Character;
-class Player;
-class Enemy;
-
-class Spell : public Action{
-
-    public:
+class Spell : public Action
+{
+  public:
+    std::vector<std::unique_ptr<Components>> components;
 
     Spell(const std::string& name_, const std::string& description_);
 
-    
-    virtual void cast(std::vector<Character*>& enemies,std::vector<Character*>& allies, Character& player) = 0;
+    void addComponent(std::unique_ptr<Components> component);
 
+    virtual void cast(Game& game, Character& player);
 };
 
-class Fireball : public Spell {
+class Fireball : public Spell
+{
 
-    public:
-
+  public:
     Fireball();
 
-    void cast(std::vector<Character*>& enemies, std::vector<Character*>& allies, Character& player) override;
+    void cast(Game& game, Character& player) override;
 
-    void operator()(std::vector<Character*>& enemy, std::vector<Character*>& allies, Character& player) override;
+    void operator()(Game& game, Character& player) override;
 };
 
 #endif

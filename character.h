@@ -1,33 +1,36 @@
 #ifndef CHARACTER_H
 #define CHARACTER_H
 
-#include <functional>
-#include <vector>
-#include <string>
+#include "components.h"
 #include <bitset>
 #include <cstdint>
+#include <functional>
+#include <string>
+#include <vector>
 
 class Action;
 class Game;
 
-//Bitmask
-enum class State : size_t {
+// Bitmask
+enum class State : size_t
+{
 
     None = 0,
     Alive = 1,
     Dead = 2,
     Stunned = 3,
-    Count 
+    Count
 
 };
 
 constexpr size_t flagCount = static_cast<size_t>(State::Count);
 
-class Character{
+class Character
+{
 
-    public:
-
-    struct MenuAction {
+  public:
+    struct MenuAction
+    {
         std::string name;
         std::function<int(Game& game)> execute;
     };
@@ -42,7 +45,7 @@ class Character{
     std::vector<Action*> debuffInv;
     std::vector<Action*> buffInv;
     std::vector<Action*> traitInv;
-    
+
     std::string name;
     int health;
     int defense;
@@ -51,19 +54,12 @@ class Character{
     int mana;
     int resistance;
     int weakness;
-    
 
-    //A Bitmask That Will Handle State Flags
-    std::bitset<flagCount> states;
+    // A Bitmask That Will Handle State Flags
+    BitsetWrapper<TargetCondition> targetConditions;
 
-    void setState(State flag);
-
-    void clearState(State flag);
-
-    bool hasState(State flag) const;
-
-
-    Character(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_);
+    Character(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_,
+              int resistance_, int weakness_);
 
     virtual int attack(Game& game) = 0;
     virtual int defend(Game& game) = 0;
@@ -71,22 +67,21 @@ class Character{
     virtual int skip(Game& game) = 0;
     virtual std::vector<MenuAction> getMenuActions();
     void initActions();
-
 };
 
-class Player : public Character{
+class Player : public Character
+{
 
-    public:
-
+  public:
     int barrier;
     int shield;
     int armor;
 
     Player();
     Player(std::string name_);
-    
-    Player(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_, 
-    int resistance_, int weakness_, int barrier_, int shield_, int armor_);
+
+    Player(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_,
+           int resistance_, int weakness_, int barrier_, int shield_, int armor_);
 
     std::vector<Character::MenuAction> getMenuActions() override;
     int attack(Game& game) override;
@@ -95,14 +90,12 @@ class Player : public Character{
     int item(Game& game) override;
     int skip(Game& game) override;
     virtual int summon(Game& game);
-    
-
 };
 
-class Enemy : public Character{
+class Enemy : public Character
+{
 
-    public:
-
+  public:
     Enemy();
 
     std::vector<Character::MenuAction> getMenuActions() override;
@@ -112,8 +105,6 @@ class Enemy : public Character{
     int item(Game& game) override;
     int skip(Game& game) override;
     virtual int summon(Game& game);
-
 };
-
 
 #endif

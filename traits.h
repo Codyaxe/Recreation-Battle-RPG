@@ -1,26 +1,23 @@
 #ifndef TRAITS_H
 #define TRAITS_H
 
+#include "action.h"
 #include <string>
 #include <vector>
-#include "action.h"
 
 class Character;
 class Player;
 class Enemy;
 
-class Trait : public Action{
+class Trait : public Action
+{
 
-    public:
+  public:
+    Trait(const std::string& name_, const std::string& description_) : Action(name_, description_)
+    {
+    }
 
-    Trait(const std::string& name_, const std::string& description_) : 
-    Action(name_,description_)
-    {}
-
-    
-    virtual void exhibit(std::vector<Character*>& enemies, std::vector<Character*>& allies, Player& player) = 0;
-    
-
+    virtual void exhibit(Game& game, Player& player) = 0;
 };
 
 #endif

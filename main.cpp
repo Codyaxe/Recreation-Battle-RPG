@@ -1,16 +1,17 @@
-#include <iostream>
 #include "action.cpp"
 #include "attacks.cpp"
-#include "character.cpp"
-#include "debuffs.cpp"
 #include "buffs.cpp"
-#include "spells.cpp"
+#include "character.cpp"
+#include "components.cpp"
+#include "debuffs.cpp"
 #include "spelleffects.cpp"
+#include "spells.cpp"
 #include "technical.cpp"
 
-//Using Windows Console API, Starting From Scratch
+// Using Windows Console API, Starting From Scratch
 
-int main(){
+int main()
+{
     Interface game;
     game.start();
 
