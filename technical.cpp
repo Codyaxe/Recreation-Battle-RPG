@@ -645,7 +645,9 @@ Interface::~Interface() { restoreConsoleMode(); }
 
 void Interface::start()
 {
+
     SetConsoleTitleW(L"Battle RPG");
+    // A Global Event Listener Thread Will Be Used Here
     Game game;
     menuPlayer(game);
 }
