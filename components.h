@@ -15,6 +15,7 @@ class Player;
 class Enemy;
 class Game;
 class TargetingComponent;
+class Observer;
 
 using ExtraAttributes = std::vector<std::string>;
 const int MAX = 2147483647;
@@ -104,10 +105,64 @@ enum class GameCondition : size_t
 
 enum class TargetCondition : size_t
 {
+    None,
+    Dead,
     Stunned,
     Poisoned,
     Invisible,
     COUNT
+};
+
+enum class ElementType
+{
+    NORMAL = 29,
+    PHYSICAL = 30,
+    FIRE = 31,
+    WATER = 32,
+    WIND = 33,
+    NATURE = 34,
+    POISON = 35,
+    ELECTRIC = 36,
+    GROUND = 37,
+    PSYCHIC = 38,
+    ROCK = 39,
+    ICE = 40,
+    BIO = 41,
+    CHEM = 42,
+    GEOM = 43,
+    MUTATE = 44,
+    PARANORMAL = 45,
+    DARK = 46,
+    STEEL = 47,
+    CHAOS = 48,
+    ORDER = 49,
+    MYSTIC = 50,
+    HOLY = 51,
+    PLASMA = 52,
+    BOMB = 53,
+    BLOOD = 54,
+    SHARD = 55,
+    CRYSTAL = 56,
+    LIGHT = 57,
+    BREAKDOWN = 58,
+    SPECIAL = 59,
+    WEAPON = 60,
+    INTERDIMENSIONAL = 61,
+    SOUND = 62,
+    AETHER = 63,
+    FORCE = 64,
+    LOGOS = 65,
+    ETHOS = 66,
+    PATHOS = 67,
+    ALMIGHTY = 68,
+    RUNE = 69,
+    DREAM = 70,
+    MAGMA = 71,
+    TECH = 72,
+    RADIOACTIVE = 73,
+    CHRONO = 74,
+    LUCK = 75,
+    FATE = 76
 };
 
 template <typename Enum, size_t N = static_cast<size_t>(Enum::COUNT)> class BitsetWrapper
@@ -135,22 +190,6 @@ class ConditionContainer
     }
 };
 
-struct Observer
-{
-    ActionType type;
-    std::string name;
-    Character& caster;
-    std::vector<Character*>& enemies;
-    std::vector<Character*>& allies;
-    std::vector<Character*> currentTargets;
-    TargetScope scope;
-    ConditionContainer states;
-    std::string failureReason;
-    int targetsDefeated = 0;
-
-    Observer(Character& c, Game& game);
-};
-
 class DynamicValue
 {
   public:
@@ -158,20 +197,19 @@ class DynamicValue
     double percentage;
     DamageBasis basis;
 
-    // Constructor declarations
     DynamicValue();
     DynamicValue(int fixedValue);
     DynamicValue(int fixedValue, DamageBasis damageBasis);
     DynamicValue(int fixedValue, double percentageValue, DamageBasis damageBasis);
 
-    void calculate(Observer& context);
+    int calculate(Observer& context, DynamicValue& damage);
 };
 
 bool evaluate(const Observer& context, const GameCondition& condition);
 bool evaluate(const Observer& context, const TargetCondition& condition);
-bool evaluateTargets(Observer& context, TargetingComponent& targetingComponent);
 bool checkTargetHasCondition(const GameCondition& condition, Character* target);
 bool checkTargetHasCondition(const TargetCondition& condition, Character* target);
+bool processTargets(Observer& context, TargetingComponent& targetingComponent);
 
 class Components
 {
@@ -264,7 +302,11 @@ class EffectComponent : public Components
     bool execute(Observer& context) override;
 };
 
-class UIComponent : public Components
+bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect effect);
+bool resolveConditional(Observer& context, EffectComponent::ConditionalEffect effect);
+bool resolveDelayed(Observer& context, EffectComponent::DelayedEffect effect);
+
+class MessageComponent : public Components
 {
   public:
     class PrimaryText
@@ -274,7 +316,6 @@ class UIComponent : public Components
         bool typingMode;
         int delay;
 
-        // Constructor declarations
         PrimaryText();
         PrimaryText(const std::string& textContent);
         PrimaryText(const std::string& textContent, bool enableTyping, int delayTime);

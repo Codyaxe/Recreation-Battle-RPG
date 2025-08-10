@@ -4,7 +4,8 @@
 #include "character.cpp"
 #include "components.cpp"
 #include "debuffs.cpp"
-#include "spelleffects.cpp"
+#include "effects.cpp"
+#include "observer.cpp"
 #include "spells.cpp"
 #include "technical.cpp"
 

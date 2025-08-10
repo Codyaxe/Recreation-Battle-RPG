@@ -4,8 +4,9 @@
 #include "buffs.h"
 #include "character.h"
 #include "debuffs.h"
+#include "effects.h"
 #include "items.h"
-#include "spelleffects.h"
+#include "observer.h"
 #include "spells.h"
 #include "summons.h"
 #include "traits.h"
@@ -475,6 +476,13 @@ void menuPlayer(Game& game)
 
 bool chooseTarget(Observer& context, TargetingComponent& targetingComponent)
 {
+    // If the observer has current targets, due to spells having two targeting phases for two
+    // effects, clear previous targets.
+    if (!context.currentTargets.empty())
+    {
+        context.currentTargets.clear();
+        context.damageDealt.clear();
+    }
     std::vector<Character*> potentialTargets;
     std::vector<Character*> validTargets;
 
@@ -558,6 +566,7 @@ bool chooseTarget(Observer& context, TargetingComponent& targetingComponent)
 
         while (i < targetingComponent.numberOfTargets)
         {
+            // Shall the user exited, return false indicating targeting is exited
             selectedIndex = menuTarget(i, validTargets, context);
             if (selectedIndex == EXIT)
             {

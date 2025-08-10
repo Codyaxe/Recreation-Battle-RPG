@@ -1,12 +1,51 @@
 #include "components.h"
+#include "character.h"
+#include "effects.h"
+#include "observer.h"
 #include "technical.h"
 #include <algorithm>
+#include <atomic>
+#include <limits>
 #include <random>
+#include <thread>
 
-Observer::Observer(Character& c, Game& game)
-    : caster(c), enemies(game.enemies), allies(game.allies), states()
+DynamicValue::DynamicValue() : value(100), percentage(1.0), basis(DamageBasis::POWER) {}
+
+DynamicValue::DynamicValue(int fixedValue)
+    : value(fixedValue), percentage(0.5), basis(DamageBasis::POWER)
 {
-    states.game = game.gameConditions;
+}
+
+DynamicValue::DynamicValue(int fixedValue, DamageBasis damageBasis)
+    : value(fixedValue), basis(damageBasis)
+{
+}
+
+DynamicValue::DynamicValue(int fixedValue, double percentageValue, DamageBasis damageBasis)
+    : value(fixedValue), percentage(percentageValue), basis(damageBasis)
+{
+}
+
+int DynamicValue::calculate(Observer& context, DynamicValue& damage)
+{
+    switch (damage.basis)
+    {
+    case DamageBasis::POWER:
+        return static_cast<int>((context.caster.power * damage.percentage) + damage.value);
+    case DamageBasis::MAGIC:
+        return static_cast<int>((context.caster.magic * damage.percentage) + damage.value);
+    case DamageBasis::HEALTH:
+        return static_cast<int>((context.caster.health * damage.percentage) + damage.value);
+    case DamageBasis::DEFENSE:
+        return static_cast<int>((context.caster.defense * damage.percentage) + damage.value);
+    case DamageBasis::SPEED:
+        return static_cast<int>((context.caster.speed * damage.percentage) + damage.value);
+    case DamageBasis::ACCURACY:
+        return static_cast<int>((context.caster.accuracy * damage.percentage) + damage.value);
+    case DamageBasis::MANA:
+        return static_cast<int>((context.caster.mana * damage.percentage) + damage.value);
+    }
+    return 0;
 }
 
 bool evaluate(const Observer& context, const GameCondition& condition)
@@ -21,11 +60,32 @@ bool evaluate(const Observer& context, const TargetCondition& condition)
     return false;
 }
 
-bool evaluateTargets(Observer& context, TargetingComponent& targetingComponent)
+bool checkTargetHasCondition(const GameCondition& condition, Character* target)
 {
+    // Checks Game Condition State
+    return false;
+}
+
+bool checkTargetHasCondition(const TargetCondition& condition, Character* target)
+{
+    // Checks Target State
+    return false;
+}
+
+bool processTargets(Observer& context, TargetingComponent& targetingComponent)
+{
+    // If the observer has current targets, due to spells having two targeting phases for two
+    // effects, clear previous targets.
+    if (!context.currentTargets.empty())
+    {
+        context.currentTargets.clear();
+        context.damageDealt.clear();
+    }
+
     std::vector<Character*> potentialTargets;
     std::vector<Character*> validTargets;
 
+    // Find Potential Targets Depending on the Targeted Faction
     if (targetingComponent.faction == TargetFaction::ENEMIES ||
         targetingComponent.faction == TargetFaction::BOTH)
     {
@@ -38,6 +98,7 @@ bool evaluateTargets(Observer& context, TargetingComponent& targetingComponent)
         potentialTargets.insert(potentialTargets.end(), context.allies.begin(),
                                 context.allies.end());
     }
+    // Find Valid Targets Depending on the Conditions
     if (targetingComponent.gameConditions.empty() && targetingComponent.targetConditions.empty())
     {
         validTargets = potentialTargets;
@@ -99,6 +160,7 @@ bool evaluateTargets(Observer& context, TargetingComponent& targetingComponent)
         }
     }
 
+    // Randomly choose targets based on valid targets and the number of targets to select
     if (!validTargets.empty())
     {
         static std::random_device rd;
@@ -115,18 +177,6 @@ bool evaluateTargets(Observer& context, TargetingComponent& targetingComponent)
     }
 
     return !context.currentTargets.empty();
-}
-
-bool checkTargetHasCondition(const GameCondition& condition, Character* target)
-{
-    // Checks Game Condition State
-    return false;
-}
-
-bool checkTargetHasCondition(const TargetCondition& condition, Character* target)
-{
-    // Checks Target State
-    return false;
 }
 
 // PrimaryEffect constructor implementations
@@ -172,24 +222,6 @@ EffectComponent::DelayedEffect::DelayedEffect() : turn(0) {}
 
 EffectComponent::DelayedEffect::DelayedEffect(const PrimaryEffect& effect, int delayTurns)
     : primary(effect), turn(delayTurns)
-{
-}
-
-// DynamicValue constructor implementations
-DynamicValue::DynamicValue() : value(100), percentage(1.0), basis(DamageBasis::POWER) {}
-
-DynamicValue::DynamicValue(int fixedValue)
-    : value(fixedValue), percentage(1.0), basis(DamageBasis::POWER)
-{
-}
-
-DynamicValue::DynamicValue(int fixedValue, DamageBasis damageBasis)
-    : value(fixedValue), basis(damageBasis)
-{
-}
-
-DynamicValue::DynamicValue(int fixedValue, double percentageValue, DamageBasis damageBasis)
-    : value(fixedValue), percentage(percentageValue), basis(damageBasis)
 {
 }
 
@@ -277,7 +309,7 @@ bool TargetingComponent::execute(Observer& context)
     }
     else
     {
-        return evaluateTargets(context, *this);
+        return processTargets(context, *this);
     }
 }
 
@@ -294,10 +326,12 @@ bool EffectComponent::execute(Observer& context)
         return true;
     }
 
+    // A code that implements
+
     // Apply primary effects
     for (const auto& effect : primaryEffects)
     {
-        // Placeholder
+        return resolvePrimary(context, effect);
     }
 
     // Apply conditional effects
@@ -314,40 +348,79 @@ bool EffectComponent::execute(Observer& context)
     return true;
 }
 
-// PrimaryText constructor implementations
-UIComponent::PrimaryText::PrimaryText() : text(""), typingMode(false), delay(0) {}
+bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect effect)
+{
+    switch (effect.type)
+    {
+    case EffectType::DAMAGE:
+        return applyDamage(context, effect);
+    case EffectType::HEAL:
+        return true;
+    case EffectType::BUFF:
+        return true;
+    case EffectType::DEBUFF:
+        return true;
+    case EffectType::EXHIBIT:
+        return true;
+    case EffectType::SUMMON:
+        return true;
+    case EffectType::STATS:
+        return true;
+    case EffectType::MOVE:
+        return true;
+    case EffectType::MISC:
+        return true;
+    }
+    return false;
+}
 
-UIComponent::PrimaryText::PrimaryText(const std::string& textContent)
+bool resolveConditional(Observer& context, EffectComponent::ConditionalEffect effect)
+{
+    // For resolving effects with condition or none
+    return resolvePrimary(context, effect.primary);
+}
+
+bool resolveDelayed(Observer& context, EffectComponent::DelayedEffect effect)
+{
+    // For resolving effects with game condition or none
+    return true;
+}
+
+// PrimaryText constructor implementations
+MessageComponent::PrimaryText::PrimaryText() : text(""), typingMode(false), delay(0) {}
+
+MessageComponent::PrimaryText::PrimaryText(const std::string& textContent)
     : text(textContent), typingMode(false), delay(0)
 {
 }
 
-UIComponent::PrimaryText::PrimaryText(const std::string& textContent, bool enableTyping,
-                                      int delayTime)
+MessageComponent::PrimaryText::PrimaryText(const std::string& textContent, bool enableTyping,
+                                           int delayTime)
     : text(textContent), typingMode(enableTyping), delay(delayTime)
 {
 }
 
-UIComponent::ConditionalText::ConditionalText() = default;
+MessageComponent::ConditionalText::ConditionalText() = default;
 
-UIComponent::ConditionalText::ConditionalText(const PrimaryText& effect) : primary(effect) {}
+MessageComponent::ConditionalText::ConditionalText(const PrimaryText& effect) : primary(effect) {}
 
-UIComponent::ConditionalText::ConditionalText(const PrimaryText& text,
-                                              const std::vector<GameCondition>& gameReqs,
-                                              const std::vector<TargetCondition>& targetReqs,
-                                              const ConditionLogic& conditionLogic)
+MessageComponent::ConditionalText::ConditionalText(const PrimaryText& text,
+                                                   const std::vector<GameCondition>& gameReqs,
+                                                   const std::vector<TargetCondition>& targetReqs,
+                                                   const ConditionLogic& conditionLogic)
     : primary(text), gameConditions(gameReqs), targetConditions(targetReqs),
       targetingConditionLogic(conditionLogic)
 {
 }
 
-// UIComponent implementations
-ComponentCategory UIComponent::getCategory() const { return ComponentCategory::UI; }
+// MessageComponent implementations
+ComponentCategory MessageComponent::getCategory() const { return ComponentCategory::UI; }
 
-std::string UIComponent::getComponentType() const { return "UIComponent"; }
+std::string MessageComponent::getComponentType() const { return "MessageComponent"; }
 
-bool UIComponent::execute(Observer& context)
+bool MessageComponent::execute(Observer& context)
 {
+    // Will Implement Threads for Input Validation and Messaging to create a Skip Message QOI
 
     for (const auto& current : primaryTexts)
     {
@@ -368,12 +441,10 @@ bool UIComponent::execute(Observer& context)
                 Sleep(current.delay);
             }
             std::cout << '\n';
-            Sleep(1000);
         }
         else
         {
             std::cout << current.text << '\n';
-            Sleep(1000);
         }
     }
 
@@ -456,5 +527,35 @@ bool UIComponent::execute(Observer& context)
             }
         }
     }
+
+    // Process Observer Dependent Text
+    for (int i = 0; i < context.currentTargets.size(); i++)
+    {
+        std::string generic = "You have dealt " + std::to_string(context.damageDealt[i]) + " to " +
+                              context.currentTargets[i]->name + " using " + context.name;
+        if (primaryTexts[0].typingMode)
+        {
+            const size_t batchSize = 3; // Batch based flushing
+            const auto text = generic;
+
+            for (size_t i = 0; i < text.size(); i += batchSize)
+            {
+                size_t end = std::min<int>(i + batchSize, text.size());
+                for (size_t j = i; j < end; ++j)
+                {
+                    std::cout << text[j];
+                }
+
+                std::cout.flush();
+                Sleep(primaryTexts[0].delay);
+            }
+            std::cout << '\n';
+        }
+        else
+        {
+            std::cout << generic << '\n';
+        }
+    }
+
     return true;
 }

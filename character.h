@@ -11,20 +11,6 @@
 class Action;
 class Game;
 
-// Bitmask
-enum class State : size_t
-{
-
-    None = 0,
-    Alive = 1,
-    Dead = 2,
-    Stunned = 3,
-    Count
-
-};
-
-constexpr size_t flagCount = static_cast<size_t>(State::Count);
-
 class Character
 {
 
@@ -45,8 +31,8 @@ class Character
     std::vector<Action*> debuffInv;
     std::vector<Action*> buffInv;
     std::vector<Action*> traitInv;
-
     std::string name;
+    std::string element;
     int health;
     int defense;
     int power;
@@ -60,8 +46,8 @@ class Character
     // A Bitmask That Will Handle State Flags
     BitsetWrapper<TargetCondition> targetConditions;
 
-    Character(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_,
-              int resistance_, int weakness_);
+    Character(std::string name_, std::string element_, int health_, int defense_, int power_,
+              int magic_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_);
 
     virtual int attack(Game& game) = 0;
     virtual int defend(Game& game) = 0;
@@ -82,8 +68,9 @@ class Player : public Character
     Player();
     Player(std::string name_);
 
-    Player(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_,
-           int resistance_, int weakness_, int barrier_, int shield_, int armor_);
+    Player(std::string name_, std::string element_, int health_, int defense_, int power_,
+           int magic_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_,
+           int barrier_, int shield_, int armor_);
 
     std::vector<Character::MenuAction> getMenuActions() override;
     int attack(Game& game) override;

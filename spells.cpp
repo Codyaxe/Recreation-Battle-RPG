@@ -1,7 +1,8 @@
 #include "spells.h"
 #include "character.h"
 #include "components.h"
-#include "spelleffects.h"
+#include "effects.h"
+#include "observer.h"
 #include "technical.h"
 
 Spell::Spell(const std::string& name_, const std::string& description_)
@@ -28,8 +29,10 @@ bool Spell::cast(Game& game, Character& player)
     // Execute components in order
     for (auto& component : components)
     {
+        // Checks activation condition first before executing
         if (component->canExecute(context))
         {
+            // If targeting was exited return back to the menu, false indicates user exited
             if (!component->execute(context))
             {
                 return false;
@@ -78,11 +81,11 @@ Fireball::Fireball() : Spell("Fireball", "A fiery blast against an enemy.")
     addComponent(std::move(effect));
 
     // UI component
-    auto ui = std::make_unique<UIComponent>();
+    auto ui = std::make_unique<MessageComponent>();
     ui->primaryTexts.reserve(FireballText::TEXT_COUNT); // Pre-allocate for efficiency
     for (size_t i = 0; i < FireballText::TEXT_COUNT; ++i)
     {
-        ui->primaryTexts.push_back(UIComponent::PrimaryText(FireballText::TEXTS[i], true, 50));
+        ui->primaryTexts.push_back(MessageComponent::PrimaryText(FireballText::TEXTS[i], true, 50));
     }
     ui->executionPriority = 3;
     addComponent(std::move(ui));

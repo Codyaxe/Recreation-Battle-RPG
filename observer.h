@@ -1,3 +1,5 @@
+
+
 // Handles UI, STATS, AND PERHAPS SOUND
 // GameEventObserver interface
 // GameEventSubject base class
@@ -9,7 +11,28 @@
 // Handles pending actions
 // Handle if something is damaged, healed, obtain stats, lose stats, attain buff/debuffs, triggers
 // x, and has x;
+#ifndef OBSERVER_H
+#define OBSERVER_H
 
-class GameEventObserver
+#include "components.h"
+#include <string>
+#include <vector>
+
+struct Observer
 {
+    ActionType type;
+    std::string name;
+    Character& caster;
+    std::vector<Character*>& enemies;
+    std::vector<Character*>& allies;
+    std::vector<Character*> currentTargets;
+    std::vector<int> damageDealt;
+    TargetScope scope;
+    ConditionContainer states;
+    std::string failureReason;
+    int targetsDefeated = 0;
+
+    Observer(Character& c, Game& game);
 };
+
+#endif

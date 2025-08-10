@@ -3,6 +3,7 @@
 
 #include "components.h"
 #include <iostream>
+#include <limits>
 #include <vector>
 #include <windows.h>
 

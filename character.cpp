@@ -24,12 +24,14 @@
 
 // };
 
-Character::Character(std::string name_, int health_, int defense_, int speed_, int accuracy_,
-                     int mana_, int resistance_, int weakness_)
+Character::Character(std::string name_, std::string element_, int health_, int defense_, int power_,
+                     int magic_, int speed_, int accuracy_, int mana_, int resistance_,
+                     int weakness_)
     :
 
-      name(name_), health(health_), defense(defense_), speed(speed_), accuracy(accuracy_),
-      mana(mana_), resistance(resistance_), weakness(weakness_)
+      name(name_), element(element_), health(health_), defense(defense_), power(power_),
+      magic(magic_), speed(speed_), accuracy(accuracy_), mana(mana_), resistance(resistance_),
+      weakness(weakness_)
 
 {
 }
@@ -49,15 +51,26 @@ void Character::initActions()
     commandsSize = commands.size();
 }
 
-Player::Player() : Character("Generic Player", 1000, 50, 100, 100, 0, 0, 0) { initActions(); }
+// Name, Element, HP, Defense, AT, Magic, Speed, Acc, Mana, Resistance, Weakness
 
-Player::Player(std::string name_) : Character(name_, 200, 50, 100, 100, 0, 0, 0) { initActions(); }
+Player::Player() : Character("Generic Player", "Normal", 200, 50, 100, 100, 100, 100, 100, 0, 0)
+{
+    initActions();
+}
 
-Player::Player(std::string name_, int health_, int defense_, int speed_, int accuracy_, int mana_,
-               int resistance_, int weakness_, int barrier_, int shield_, int armor_)
+Player::Player(std::string name_)
+    : Character(name_, "Normal", 200, 50, 100, 100, 100, 100, 100, 0, 0)
+{
+    initActions();
+}
+
+Player::Player(std::string name_, std::string element_, int health_, int defense_, int power_,
+               int magic_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_,
+               int barrier_, int shield_, int armor_)
     :
 
-      Character(name_, health_, defense_, speed_, accuracy_, mana_, resistance_, weakness_),
+      Character(name_, element_, health_, defense_, power_, magic_, speed_, accuracy_, mana_,
+                resistance_, weakness_),
       barrier(barrier_), shield(shield_), armor(armor_)
 
 {
@@ -119,7 +132,7 @@ int Player::skip(Game& game)
     return SKIP_TURN;
 };
 
-Enemy::Enemy() : Character("Generic Enemy", 200, 50, 100, 100, 0, 0, 0) {}
+Enemy::Enemy() : Character("Generic Enemy", "Normal", 200, 50, 100, 100, 100, 100, 100, 0, 0) {}
 
 int Enemy::attack(Game& game)
 {
