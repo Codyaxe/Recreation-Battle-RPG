@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <atomic>
 #include <vector>
 
 class Character;
@@ -256,6 +257,11 @@ bool resolveDelayed(Observer& context, EffectComponent::DelayedEffect effect);
 
 class MessageComponent : public Components
 {
+  private:
+    bool processMessage(Observer& context, std::atomic<bool>& hasProceeded,
+                        std::atomic<bool>& hasReachedEnd);
+    bool processSkip(std::atomic<bool>& hasProceeded, std::atomic<bool>& hasReachedEnd);
+
   public:
     class PrimaryText
     {

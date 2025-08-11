@@ -132,7 +132,7 @@ int Player::skip(Game& game)
     return SKIP_TURN;
 };
 
-Enemy::Enemy() : Character("Generic Enemy", "Normal", 200, 50, 100, 100, 100, 100, 100, 0, 0) {}
+Enemy::Enemy() : Character("Generic Enemy", "Nature", 200, 50, 100, 100, 100, 100, 100, 0, 0) {}
 
 int Enemy::attack(Game& game)
 {

@@ -4,7 +4,6 @@
 #include "observer.h"
 #include "technical.h"
 #include <algorithm>
-#include <atomic>
 #include <limits>
 #include <random>
 #include <thread>
@@ -418,33 +417,50 @@ ComponentCategory MessageComponent::getCategory() const { return ComponentCatego
 
 std::string MessageComponent::getComponentType() const { return "MessageComponent"; }
 
-bool MessageComponent::execute(Observer& context)
+bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasProceeded,
+                                      std::atomic<bool>& hasReachedEnd)
 {
-    // Will Implement Threads for Input Validation and Messaging to create a Skip Message QOI
-
+    std::string storeSkippedString;
+    clearScreen();
     for (const auto& current : primaryTexts)
     {
-        if (current.typingMode)
+        // I might do an in-place storing instead so I don't have to clear the screen. For now do
+        // this instead.
+        storeSkippedString += current.text + '\n';
+        if (!hasProceeded.load())
         {
-            const size_t batchSize = 3; // Batch based flushing
-            const auto& text = current.text;
-
-            for (size_t i = 0; i < text.size(); i += batchSize)
+            if (current.typingMode)
             {
-                size_t end = std::min<int>(i + batchSize, text.size());
-                for (size_t j = i; j < end; ++j)
+                const size_t batchSize = 3; // Batch based flushing
+                const auto& text = current.text;
+                for (size_t i = 0; i < text.size(); i += batchSize)
                 {
-                    std::cout << text[j];
-                }
+                    if (!hasProceeded.load())
+                    {
+                        size_t end = std::min<int>(i + batchSize, text.size());
+                        for (size_t j = i; j < end; ++j)
+                        {
+                            std::cout << text[j];
+                        }
 
-                std::cout.flush();
-                Sleep(current.delay);
+                        std::cout.flush();
+                        Sleep(current.delay);
+                    }
+                    else
+                    {
+
+                        break;
+                    }
+                }
+                if (!hasProceeded.load())
+                {
+                    std::cout << '\n';
+                }
             }
-            std::cout << '\n';
-        }
-        else
-        {
-            std::cout << current.text << '\n';
+            else
+            {
+                std::cout << current.text << '\n';
+            }
         }
     }
 
@@ -506,24 +522,40 @@ bool MessageComponent::execute(Observer& context)
         if (shouldDisplay)
         {
             const auto& primary = conditionalText.primary;
-            if (primary.typingMode)
+            storeSkippedString += primary.text + '\n';
+            if (!hasProceeded.load())
             {
-                const size_t batchSize = 3; // Batch based flushing
-                for (size_t i = 0; i < primary.text.size(); i += batchSize)
+                if (primary.typingMode)
                 {
-                    size_t end = std::min<size_t>(i + batchSize, primary.text.size());
-                    for (size_t j = i; j < end; ++j)
+                    const size_t batchSize = 3; // Batch based flushing
+                    for (size_t i = 0; i < primary.text.size(); i += batchSize)
                     {
-                        std::cout << primary.text[j];
+                        if (!hasProceeded.load())
+                        {
+                            {
+                                size_t end = std::min<size_t>(i + batchSize, primary.text.size());
+                                for (size_t j = i; j < end; ++j)
+                                {
+                                    std::cout << primary.text[j];
+                                }
+                                std::cout.flush();
+                                Sleep(primary.delay);
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
-                    std::cout.flush();
-                    Sleep(primary.delay);
+                    if (!hasProceeded.load())
+                    {
+                        std::cout << '\n';
+                    }
                 }
-                std::cout << '\n';
-            }
-            else
-            {
-                std::cout << primary.text << '\n';
+                else
+                {
+                    std::cout << primary.text << '\n';
+                }
             }
         }
     }
@@ -533,29 +565,123 @@ bool MessageComponent::execute(Observer& context)
     {
         std::string generic = "You have dealt " + std::to_string(context.damageDealt[i]) + " to " +
                               context.currentTargets[i]->name + " using " + context.name;
-        if (primaryTexts[0].typingMode)
+        storeSkippedString += generic + '\n';
+        if (!hasProceeded.load())
         {
-            const size_t batchSize = 3; // Batch based flushing
-            const auto text = generic;
-
-            for (size_t i = 0; i < text.size(); i += batchSize)
+            if (primaryTexts[0].typingMode)
             {
-                size_t end = std::min<int>(i + batchSize, text.size());
-                for (size_t j = i; j < end; ++j)
+                const size_t batchSize = 3; // Batch based flushing
+                const auto text = generic;
+                for (size_t i = 0; i < text.size(); i += batchSize)
                 {
-                    std::cout << text[j];
-                }
+                    if (!hasProceeded.load())
+                    {
 
-                std::cout.flush();
-                Sleep(primaryTexts[0].delay);
+                        {
+                            size_t end = std::min<int>(i + batchSize, text.size());
+                            for (size_t j = i; j < end; ++j)
+                            {
+                                std::cout << text[j];
+                            }
+
+                            std::cout.flush();
+                            Sleep(primaryTexts[0].delay);
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if (!hasProceeded.load())
+                {
+                    std::cout << '\n';
+                }
             }
-            std::cout << '\n';
-        }
-        else
-        {
-            std::cout << generic << '\n';
+            else
+            {
+                std::cout << generic << '\n';
+            }
         }
     }
+
+    if (hasProceeded.load())
+    {
+        clearScreen();
+        std::cout << storeSkippedString;
+    }
+    hasReachedEnd.store(true);
+
+    std::atomic<bool> hasProceededToNext{false};
+    std::atomic<bool> hasProceededToNextEnd{false};
+
+    std::thread wait(&MessageComponent::processSkip, this, std::ref(hasProceededToNext),
+                     std::ref(hasProceededToNextEnd));
+
+    std::cout << "Press Enter to continue...";
+
+    int dotCount = 0;
+    const int maxDots = 3;
+    int counter = 0;
+
+    while (!hasProceededToNext.load())
+    {
+        Sleep(50);
+
+        if (++counter % 6 == 0)
+        {
+            std::cout << '\r' << "Press Enter to continue   " << "\b\b\b";
+            for (int i = 0; i < dotCount; ++i)
+                std::cout << '.';
+            std::cout << std::flush;
+
+            dotCount = (dotCount + 1) % (maxDots + 1);
+        }
+    }
+
+    hasProceededToNextEnd.store(true);
+    wait.join();
+
+    return true;
+}
+
+bool MessageComponent::processSkip(std::atomic<bool>& hasProceeded,
+                                   std::atomic<bool>& hasReachedEnd)
+{
+    INPUT_RECORD inputRecord;
+    DWORD eventsRead;
+
+    while (!hasReachedEnd.load())
+    {
+        DWORD waitResult = WaitForSingleObject(Interface::hIn, 50);
+
+        if (waitResult == WAIT_OBJECT_0)
+        {
+            if (ReadConsoleInput(Interface::hIn, &inputRecord, 1, &eventsRead) && eventsRead > 0)
+            {
+                if (inputRecord.EventType == KEY_EVENT && inputRecord.Event.KeyEvent.bKeyDown &&
+                    inputRecord.Event.KeyEvent.wVirtualKeyCode == VK_RETURN)
+                {
+                    hasProceeded.store(true);
+                    break;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool MessageComponent::execute(Observer& context)
+{
+    std::atomic<bool> hasSkipped{false};
+    std::atomic<bool> hasReachedEnd{false};
+    std::thread message(&MessageComponent::processMessage, this, std::ref(context),
+                        std::ref(hasSkipped), std::ref(hasReachedEnd));
+    std::thread input(&MessageComponent::processSkip, this, std::ref(hasSkipped),
+                      std::ref(hasReachedEnd));
+
+    message.join();
+    input.join();
 
     return true;
 }
