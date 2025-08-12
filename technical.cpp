@@ -650,8 +650,8 @@ void Interface::start()
     SetConsoleTitleW(L"Battle RPG");
     // A Global Event Listener Thread Will Be Used Here
     Game game;
-    EventObserver eventObserver;
-    std::thread listener(&EventObserver::trigger, &eventObserver, std::ref(game));
+    static GlobalEventObserver eventObserver;
+    std::thread listener(&GlobalEventObserver::trigger, &eventObserver, std::ref(game));
     menuPlayer(game);
 
     listener.join();

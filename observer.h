@@ -18,11 +18,12 @@
 #include <string>
 #include <vector>
 #include <queue>
+#include <mutex>
+#include <tuple>
+#include <functional>
+#include <string_view>
 
-enum class Event_Type
-{
-
-};
+using ObservedData = std::tuple<EventConditions, Character*, std::string_view, TargetCondition>;
 
 class Observer
 {
@@ -42,14 +43,17 @@ class Observer
     Observer(Character& c, Game& game);
 };
 
-class EventObserver
+class GlobalEventObserver
 {
+  private:
+    std::queue<ObservedData> events;
+    std::mutex mutex;
+
   public:
-    std::queue<Event_Type> events;
-
-    EventObserver() = default;
-
-    void trigger(Game& game, Event_Type event, Character& c);
+    GlobalEventObserver() = default;
+    void trigger(Game& game);
+    void enqueue(const EventConditions& event, Character* c = nullptr, std::string_view str = {},
+                 const TargetCondition& condition = TargetCondition::NONE);
 };
 
 #endif

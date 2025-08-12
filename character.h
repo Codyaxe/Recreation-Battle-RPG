@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 class Action;
@@ -48,7 +49,7 @@ class Character
     // A Bitmask That Will Handle State Flags
     BitsetWrapper<TargetCondition> targetConditions;
     // For Filtering if a Character has an On X Ablity
-    BitsetWrapper<OnEventConditions> onEventsAbilities;
+    BitsetWrapper<EventConditions> onEventsAbilities;
 
     Character(std::string name_, std::string element_, int health_, int defense_, int power_,
               int magic_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_,
@@ -64,25 +65,45 @@ class Character
     // Non-Pure Virtual On-Event
     virtual void onDeath(Game& game) {}
     virtual void onSummon(Game& game) {}
-    virtual void onInitiate(Game& game) {}
-    virtual void onCast(Game& game) {}
-    virtual void onAfflict(Game& game) {}
-    virtual void onBuff(Game& game) {}
-    virtual void onExhibit(Game& game) {}
-    virtual void onCall(Game& game) {}
-    virtual void onUse(Game& game) {}
-    virtual void onChange(Game& game) {}
-    virtual void onPlay(Game& game) {}
-    virtual void onDamageTaken(Game& game) {}
+    // On event when an attack executes;
+    virtual void onInitiate(Game& game, std::string_view str) {}
+    // On event when a spell executes;
+    virtual void onCast(Game& game, std::string_view str) {}
+    // On event when a debuff executes;
+    virtual void onAfflict(Game& game, std::string_view str) {}
+    // On event when a buff executes;
+    virtual void onBuff(Game& game, std::string_view str) {}
+    // On event when a trait executes;
+    virtual void onExhibit(Game& game, std::string_view str) {}
+    // On event when a summon executes;
+    virtual void onCall(Game& game, std::string_view str) {}
+    // On event when an item is utilized;
+    virtual void onUse(Game& game, std::string_view str) {}
+    // On event when an equipment is utilized;
+    virtual void onChange(Game& game, std::string_view str) {}
+    // On event when a card is played (for Cardmasters);
+    virtual void onPlay(Game& game, std::string_view str) {}
+    virtual void onTargetInitiate(Game& game, std::string_view str) {}
+    virtual void onTargetCast(Game& game, std::string_view str) {}
+    virtual void onTargetAfflict(Game& game, std::string_view str) {}
+    virtual void onTargetBuff(Game& game, std::string_view str) {}
+    virtual void onTargetExhibit(Game& game, std::string_view str) {}
+    virtual void onTargetCall(Game& game, std::string_view str) {}
+    virtual void onTargetUse(Game& game, std::string_view str) {}
+    virtual void onTargetChange(Game& game, std::string_view str) {}
+    virtual void onTargetPlay(Game& game, std::string_view str) {}
+    virtual void onTakingDamage(Game& game) {}
     virtual void onDealingDamage(Game& game) {}
     virtual void onHeal(Game& game) {}
-    virtual void onGainX(Game& game) {}
-    virtual void onLoseX(Game& game) {}
+    virtual void onGainX(Game& game, TargetCondition condition) {}
+    virtual void onLoseX(Game& game, TargetCondition condition) {}
+    // Can add a condition X. If X happened, trigger Start and End Turn
     virtual void onStartTurn(Game& game) {}
     virtual void onEndTurn(Game& game) {}
     virtual void onCrit(Game& game) {}
     virtual void onBlock(Game& game) {}
     virtual void onParry(Game& game) {}
+    virtual void onCounter(Game& game) {}
     virtual void onDodge(Game& game) {}
     virtual void onMiss(Game& game) {}
     virtual void onKill(Game& game) {}

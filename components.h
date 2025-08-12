@@ -24,14 +24,16 @@ const int MAX = 2147483647;
 enum class ConditionLogic
 {
     AND,
-    OR
+    OR,
+    COUNT
 };
 
 // For the mode of the target selection
 enum class TargetSelectionMode
 {
     AUTOMATIC,
-    MANUAL
+    MANUAL,
+    COUNT
 };
 
 // For the scope of the target selection
@@ -40,7 +42,8 @@ enum class TargetScope
     SINGLE,
     MULTI,
     ALL,
-    NONE
+    NONE,
+    COUNT
 };
 
 // For group target selection
@@ -49,7 +52,8 @@ enum class TargetFaction
     ENEMIES,
     ALLIES,
     BOTH,
-    NONE
+    NONE,
+    COUNT
 };
 
 // Flags to detemine the current action
@@ -61,7 +65,8 @@ enum class ActionType
     ITEM,
     DEBUFF,
     BUFF,
-    TRAIT
+    TRAIT,
+    COUNT
 };
 
 // Various effect types
@@ -75,7 +80,8 @@ enum class EffectType
     SUMMON,
     STATS,
     MOVE,
-    MISC
+    MISC,
+    COUNT
 };
 
 enum class GenericType
@@ -91,7 +97,8 @@ enum class DamageBasis
     DEFENSE,
     SPEED,
     ACCURACY,
-    MANA
+    MANA,
+    COUNT
 };
 
 // Component execution phases
@@ -116,6 +123,46 @@ enum class TargetCondition : size_t
     STUN,
     POISON,
     INVISIBLE,
+    COUNT
+};
+
+enum class EventConditions
+{
+    ON_DEATH,
+    ON_SUMMON,
+    ON_INITIATE,
+    ON_CAST,
+    ON_AFFLICT,
+    ON_BUFF,
+    ON_EXHIBIT,
+    ON_CALL,
+    ON_USE,
+    ON_CHANGE,
+    ON_PLAY,
+    ON_TARGET_INITIATE,
+    ON_TARGET_CAST,
+    ON_TARGET_AFFLICT,
+    ON_TARGET_BUFF,
+    ON_TARGET_EXHIBIT,
+    ON_TARGET_CALL,
+    ON_TARGET_USE,
+    ON_TARGET_CHANGE,
+    ON_TARGET_PLAY,
+    ON_DAMAGE_TAKEN,
+    ON_DEALING_DAMAGE,
+    ON_HEAL,
+    ON_GAIN_X,
+    ON_LOSE_X,
+    ON_START_TURN,
+    ON_END_TURN,
+    ON_CRIT,
+    ON_BLOCK,
+    ON_PARRY,
+    ON_COUNTER,
+    ON_DODGE,
+    ON_MISS,
+    ON_KILL,
+    ON_FATAL_DAMAGE,
     COUNT
 };
 
