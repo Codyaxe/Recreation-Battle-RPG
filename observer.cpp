@@ -94,15 +94,17 @@ void GlobalEventObserver::trigger(Game& game)
 
     while (true)
     {
+        std::lock_guard<std::mutex> lock(mutex);
         if (!events.empty())
         {
             ObservedData data = events.front();
+            events.pop();
+            lock.~lock_guard();
+
             EventConditions event = std::get<0>(data);
             Character* target = std::get<1>(data);
             std::string_view str = std::get<2>(data);
             TargetCondition condition = std::get<3>(data);
-
-            bool eventHandled = false;
 
             if (target)
             {
@@ -113,7 +115,7 @@ void GlobalEventObserver::trigger(Game& game)
                     if (it != stringEventMap.end())
                     {
                         it->second(target, game, str);
-                        eventHandled = true;
+                        continue;
                     }
                 }
                 // Handle events with condition parameter
@@ -123,7 +125,7 @@ void GlobalEventObserver::trigger(Game& game)
                     if (it != conditionEventMap.end())
                     {
                         it->second(target, game, condition);
-                        eventHandled = true;
+                        continue;
                     }
                 }
                 // Handle simple events (no extra parameters)
@@ -133,7 +135,7 @@ void GlobalEventObserver::trigger(Game& game)
                     if (it != simpleEventMap.end())
                     {
                         it->second(target, game);
-                        eventHandled = true;
+                        continue;
                     }
                 }
             }
@@ -159,17 +161,12 @@ void GlobalEventObserver::trigger(Game& game)
                     {
                         callEvent(enemy);
                     }
-                    eventHandled = true;
+                    continue;
                 }
             }
 
-            if (!eventHandled)
-            {
-                std::cout << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
-                Sleep(1000);
-            }
-
-            events.pop();
+            std::cout << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
+            Sleep(1000);
         }
     }
 }
