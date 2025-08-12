@@ -39,7 +39,7 @@ bool Spell::cast(Game& game, Character& player)
             }
 
             // Stop execution if spell failed and component is not optional
-            if (context.states.game.has(GameCondition::SpellFailed) && !component->isOptional)
+            if (context.states.game.has(GameCondition::SPELL_FAILED) && !component->isOptional)
             {
                 std::cout << "Spell failed: " << context.failureReason << std::endl;
                 break;

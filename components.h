@@ -78,6 +78,11 @@ enum class EffectType
     MISC
 };
 
+enum class GenericType
+{
+
+};
+
 enum class DamageBasis
 {
     POWER,
@@ -99,18 +104,18 @@ enum class ComponentCategory
 
 enum class GameCondition : size_t
 {
-    WasCriticalHit,
-    SpellFailed,
+    WAS_CRITICAL_HIT,
+    SPELL_FAILED,
     COUNT
 };
 
 enum class TargetCondition : size_t
 {
-    None,
-    Dead,
-    Stunned,
-    Poisoned,
-    Invisible,
+    NONE,
+    DEAD,
+    STUN,
+    POISON,
+    INVISIBLE,
     COUNT
 };
 
@@ -204,6 +209,7 @@ class EffectComponent : public Components
       public:
         EffectType type;
         std::string subType;
+        TargetCondition genericType; // For Buffs, Debuffs, and Exhibit
         DynamicValue primaryValue;
         DynamicValue secondaryValue;
         ExtraAttributes extras;

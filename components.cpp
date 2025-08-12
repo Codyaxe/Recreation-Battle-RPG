@@ -27,6 +27,7 @@ DynamicValue::DynamicValue(int fixedValue, double percentageValue, DamageBasis d
 
 int DynamicValue::calculate(Observer& context, DynamicValue& damage)
 {
+    // Base the damage on a particular stat.
     switch (damage.basis)
     {
     case DamageBasis::POWER:
@@ -227,12 +228,12 @@ EffectComponent::DelayedEffect::DelayedEffect(const PrimaryEffect& effect, int d
 // Components base class implementations
 bool Components::canExecute(const Observer& context) const
 {
-    return shouldExecute(context) && !context.states.game.has(GameCondition::SpellFailed);
+    return shouldExecute(context) && !context.states.game.has(GameCondition::SPELL_FAILED);
 }
 
 void Components::onExecutionFailed(Observer& context, const std::string& reason)
 {
-    context.states.game.set(GameCondition::SpellFailed);
+    context.states.game.set(GameCondition::SPELL_FAILED);
     context.failureReason = reason;
 }
 
@@ -289,6 +290,7 @@ std::string TargetingComponent::getComponentType() const { return "TargetingComp
 
 bool TargetingComponent::execute(Observer& context)
 {
+    // Adjusts the numberofTarget variable depending on the target scope chosen
     if (scope == TargetScope::SINGLE)
     {
         numberOfTargets = 1;
@@ -297,11 +299,13 @@ bool TargetingComponent::execute(Observer& context)
     {
         numberOfTargets = MAX;
     }
+    // Validation for when the spell targers enemies and there are no valid enemies
     if (context.enemies.empty() && faction == TargetFaction::ENEMIES)
     {
         onExecutionFailed(context, "No enemies available to target");
         return true;
     }
+    // Executes function depending on target selection mode
     if (mode == TargetSelectionMode::MANUAL)
     {
         return chooseTarget(context, *this);
@@ -349,6 +353,7 @@ bool EffectComponent::execute(Observer& context)
 
 bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect effect)
 {
+    // Call function based on their effect type (eg. damage -> applyDamage(), heal -> applyHeal())
     switch (effect.type)
     {
     case EffectType::DAMAGE:
@@ -527,7 +532,7 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
             {
                 if (primary.typingMode)
                 {
-                    const size_t batchSize = 3; // Batch based flushing
+                    const size_t batchSize = 3;
                     for (size_t i = 0; i < primary.text.size(); i += batchSize)
                     {
                         if (!hasProceeded.load())
@@ -570,7 +575,7 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
         {
             if (primaryTexts[0].typingMode)
             {
-                const size_t batchSize = 3; // Batch based flushing
+                const size_t batchSize = 3;
                 const auto text = generic;
                 for (size_t i = 0; i < text.size(); i += batchSize)
                 {

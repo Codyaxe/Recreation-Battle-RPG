@@ -17,9 +17,16 @@
 #include "components.h"
 #include <string>
 #include <vector>
+#include <queue>
 
-struct Observer
+enum class Event_Type
 {
+
+};
+
+class Observer
+{
+  public:
     ActionType type;
     std::string name;
     Character& caster;
@@ -33,6 +40,16 @@ struct Observer
     int targetsDefeated = 0;
 
     Observer(Character& c, Game& game);
+};
+
+class EventObserver
+{
+  public:
+    std::queue<Event_Type> events;
+
+    EventObserver() = default;
+
+    void trigger(Game& game, Event_Type event, Character& c);
 };
 
 #endif

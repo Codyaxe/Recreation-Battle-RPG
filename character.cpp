@@ -26,12 +26,12 @@
 
 Character::Character(std::string name_, std::string element_, int health_, int defense_, int power_,
                      int magic_, int speed_, int accuracy_, int mana_, int resistance_,
-                     int weakness_)
+                     int weakness_, int luck_)
     :
 
-      name(name_), element(element_), health(health_), defense(defense_), power(power_),
-      magic(magic_), speed(speed_), accuracy(accuracy_), mana(mana_), resistance(resistance_),
-      weakness(weakness_)
+      name(name_), element(element_), baseHealth(health_), health(health_), defense(defense_),
+      power(power_), magic(magic_), speed(speed_), accuracy(accuracy_), mana(mana_),
+      resistance(resistance_), weakness(weakness_), luck(luck_)
 
 {
 }
@@ -51,26 +51,26 @@ void Character::initActions()
     commandsSize = commands.size();
 }
 
-// Name, Element, HP, Defense, AT, Magic, Speed, Acc, Mana, Resistance, Weakness
+// Name, Element, HP, Defense, AT, Magic, Speed, Acc, Mana, Resistance, Weakness, Luck
 
-Player::Player() : Character("Generic Player", "Normal", 200, 50, 100, 100, 100, 100, 100, 0, 0)
+Player::Player() : Character("Generic Player", "Normal", 200, 50, 100, 100, 100, 100, 100, 0, 0, 1)
 {
     initActions();
 }
 
 Player::Player(std::string name_)
-    : Character(name_, "Normal", 200, 50, 100, 100, 100, 100, 100, 0, 0)
+    : Character(name_, "Normal", 200, 50, 100, 100, 100, 100, 100, 0, 0, 1)
 {
     initActions();
 }
 
 Player::Player(std::string name_, std::string element_, int health_, int defense_, int power_,
                int magic_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_,
-               int barrier_, int shield_, int armor_)
+               int luck_, int barrier_, int shield_, int armor_)
     :
 
       Character(name_, element_, health_, defense_, power_, magic_, speed_, accuracy_, mana_,
-                resistance_, weakness_),
+                resistance_, weakness_, luck_),
       barrier(barrier_), shield(shield_), armor(armor_)
 
 {
@@ -132,7 +132,7 @@ int Player::skip(Game& game)
     return SKIP_TURN;
 };
 
-Enemy::Enemy() : Character("Generic Enemy", "Nature", 200, 50, 100, 100, 100, 100, 100, 0, 0) {}
+Enemy::Enemy() : Character("Generic Enemy", "Nature", 200, 50, 100, 100, 100, 100, 100, 0, 0, 1) {}
 
 int Enemy::attack(Game& game)
 {

@@ -60,6 +60,7 @@ bool applyDamage(Observer& context, EffectComponent::PrimaryEffect& effect)
         {"Fate", {"Interdimensional", "Luck", "Logos", "Pathos", "Chaos"}}};
 
     int damage = effect.primaryValue.calculate(context, effect.primaryValue); // Default damage
+    // Apply damage to each chosen targets
     for (auto& target : context.currentTargets)
     {
         if (std::any_of(effectivenessTable.at(effect.subType).begin(),
@@ -70,20 +71,50 @@ bool applyDamage(Observer& context, EffectComponent::PrimaryEffect& effect)
             damage =
                 effect.primaryValue.calculate(context, effect.primaryValue) * 2; // Super effective
         }
+        /*If Critical Hit Do This Implementation*/
         // Stores the damage dealt for UI/Utility/Conditional purposes
         context.damageDealt.push_back(damage);
         target->health -= damage;
         if (target->health <= 0)
         {
-            target->targetConditions.set(TargetCondition::Dead);
+            target->targetConditions.set(TargetCondition::DEAD);
         }
     }
     return true;
 };
 
-bool applyHeal(Observer& context, EffectComponent::PrimaryEffect& effect) { return true; };
+bool applyHeal(Observer& context, EffectComponent::PrimaryEffect& effect)
+{
+    int heal = effect.primaryValue.calculate(context, effect.primaryValue);
+    for (auto& target : context.currentTargets)
+    {
+        if (target->health + heal <= target->baseHealth)
+        {
+            target->health += heal;
+        }
+        else
+        {
+            target->health = target->baseHealth;
+        }
+    }
 
-bool applyBuff(Observer& context, EffectComponent::PrimaryEffect& effect) { return true; };
+    return true;
+};
+/*   EffectType type: Type of Effect (eg. Damage, Heal, Buff)
+   std::string subType:  Type of subtype (eg. damage -> ElementType, buff/debuff -> Buff/DebuffType)
+   GenericType genericType
+   DynamicValue primaryValue;
+   DynamicValue secondaryValue;
+   ExtraAttributes extras; */
+
+bool applyBuff(Observer& context, EffectComponent::PrimaryEffect& effect)
+{
+    for (auto& target : context.currentTargets)
+    {
+        target->targetConditions.set(effect.genericType);
+    }
+    return true;
+};
 
 bool applyDebuff(Observer& context, EffectComponent::PrimaryEffect& effect) { return true; };
 

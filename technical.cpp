@@ -10,6 +10,7 @@
 #include "spells.h"
 #include "summons.h"
 #include "traits.h"
+#include <thread>
 
 HANDLE Interface::hOut;
 HANDLE Interface::hIn;
@@ -649,5 +650,9 @@ void Interface::start()
     SetConsoleTitleW(L"Battle RPG");
     // A Global Event Listener Thread Will Be Used Here
     Game game;
+    EventObserver eventObserver;
+    std::thread listener(&EventObserver::trigger, &eventObserver, std::ref(game));
     menuPlayer(game);
+
+    listener.join();
 }
