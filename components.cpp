@@ -7,6 +7,10 @@
 #include <limits>
 #include <random>
 #include <thread>
+StatusContainer::StatusContainer(const TargetCondition& status, const int& value)
+    : condition(status), duration(value)
+{
+}
 
 DynamicValue::DynamicValue() : value(100), percentage(1.0), basis(DamageBasis::POWER) {}
 
@@ -89,14 +93,16 @@ bool processTargets(Observer& context, TargetingComponent& targetingComponent)
     if (targetingComponent.faction == TargetFaction::ENEMIES ||
         targetingComponent.faction == TargetFaction::BOTH)
     {
-        potentialTargets.insert(potentialTargets.end(), context.enemies.begin(),
-                                context.enemies.end());
+        std::transform(context.enemies.begin(), context.enemies.end(),
+                       std::back_inserter(potentialTargets),
+                       [](const std::unique_ptr<Character>& c) { return c.get(); });
     }
     if (targetingComponent.faction == TargetFaction::ALLIES ||
         targetingComponent.faction == TargetFaction::BOTH)
     {
-        potentialTargets.insert(potentialTargets.end(), context.allies.begin(),
-                                context.allies.end());
+        std::transform(context.allies.begin(), context.allies.end(),
+                       std::back_inserter(potentialTargets),
+                       [](const std::unique_ptr<Character>& c) { return c.get(); });
     }
     // Find Valid Targets Depending on the Conditions
     if (targetingComponent.gameConditions.empty() && targetingComponent.targetConditions.empty())
@@ -199,6 +205,16 @@ EffectComponent::PrimaryEffect::PrimaryEffect(EffectType effectType, const std::
                                               const ExtraAttributes& extraAttribs)
     : type(effectType), subType(subTypeName), primaryValue(primary), secondaryValue(secondary),
       extras(extraAttribs)
+{
+}
+
+EffectComponent::PrimaryEffect::PrimaryEffect(EffectType effectType, const std::string& subTypeName,
+                                              TargetCondition general, TraitCondition trait,
+                                              const DynamicValue& primary,
+                                              const DynamicValue& secondary,
+                                              const ExtraAttributes& extraAttribs)
+    : type(effectType), subType(subTypeName), genericType(general), traitType(trait),
+      primaryValue(primary), secondaryValue(secondary), extras(extraAttribs)
 {
 }
 

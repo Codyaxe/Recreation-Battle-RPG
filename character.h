@@ -5,6 +5,7 @@
 #include <bitset>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -25,13 +26,13 @@ class Character
     std::vector<MenuAction> commands;
     int commandsSize;
 
-    std::vector<Action*> spellInv;
-    std::vector<Action*> attackInv;
-    std::vector<Action*> summonInv;
-    std::vector<Action*> itemInv;
-    std::vector<Action*> debuffInv;
-    std::vector<Action*> buffInv;
-    std::vector<Action*> traitInv;
+    std::vector<std::unique_ptr<Action>> spellInv;
+    std::vector<std::unique_ptr<Action>> attackInv;
+    std::vector<std::unique_ptr<Action>> summonInv;
+    std::vector<std::unique_ptr<Action>> itemInv;
+    std::vector<std::unique_ptr<Action>> debuffInv;
+    std::vector<std::unique_ptr<Action>> buffInv;
+    std::vector<std::unique_ptr<Action>> traitInv;
     std::string name;
     std::string element;
     int baseHealth;
@@ -47,9 +48,12 @@ class Character
     int luck; // For Critical Hit Chance
 
     // A Bitmask That Will Handle State Flags
+    std::vector<StatusContainer> statuses;
     BitsetWrapper<TargetCondition> targetConditions;
+
+    BitsetWrapper<TraitCondition> traitConditions;
     // For Filtering if a Character has an On X Ablity
-    BitsetWrapper<EventConditions> onEventsAbilities;
+    BitsetWrapper<EventCondition> onEventsAbilities;
 
     Character(std::string name_, std::string element_, int health_, int defense_, int power_,
               int magic_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_,

@@ -14,10 +14,15 @@ class Spell : public Action
     std::vector<std::unique_ptr<Components>> components;
 
     Spell(const std::string& name_, const std::string& description_);
+    ~Spell() = default;
 
     void addComponent(std::unique_ptr<Components> component);
 
     virtual bool cast(Game& game, Character& player);
+    std::unique_ptr<Action> clone() const override
+    {
+        return std::make_unique<Spell>(name, description);
+    };
 };
 
 class Fireball : public Spell
@@ -25,8 +30,9 @@ class Fireball : public Spell
 
   public:
     Fireball();
+    ~Fireball() = default;
 
-    void operator()(Game& game, Character& player) override;
+    std::unique_ptr<Action> clone() const override { return std::make_unique<Fireball>(); };
 };
 
 #endif

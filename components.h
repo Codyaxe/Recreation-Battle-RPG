@@ -91,6 +91,7 @@ enum class GenericType
 
 enum class DamageBasis
 {
+    NONE,
     POWER,
     MAGIC,
     HEALTH,
@@ -126,7 +127,13 @@ enum class TargetCondition : size_t
     COUNT
 };
 
-enum class EventConditions
+enum class TraitCondition : size_t
+{
+    NONE,
+    COUNT,
+};
+
+enum class EventCondition
 {
     ON_DEATH,
     ON_SUMMON,
@@ -176,6 +183,19 @@ template <typename Enum, size_t N = static_cast<size_t>(Enum::COUNT)> class Bits
     void clear(Enum e) { bits.reset(static_cast<size_t>(e)); }
     bool has(Enum e) const { return bits.test(static_cast<size_t>(e)); }
     void clearAll() { bits.reset(); }
+};
+
+class StatusContainer
+{
+  public:
+    TargetCondition condition;
+    int duration;
+
+    void reduce();
+    void increase();
+
+    StatusContainer() = default;
+    StatusContainer(const TargetCondition& status, const int& value);
 };
 
 class ConditionContainer
@@ -256,7 +276,8 @@ class EffectComponent : public Components
       public:
         EffectType type;
         std::string subType;
-        TargetCondition genericType; // For Buffs, Debuffs, and Exhibit
+        TargetCondition genericType; // For Buffs, Debuffs
+        TraitCondition traitType;    // For Exhibit
         DynamicValue primaryValue;
         DynamicValue secondaryValue;
         ExtraAttributes extras;
@@ -268,6 +289,9 @@ class EffectComponent : public Components
         PrimaryEffect(EffectType effectType, const std::string& subTypeName,
                       const DynamicValue& primary, const DynamicValue& secondary,
                       const ExtraAttributes& extraAttribs);
+        PrimaryEffect(EffectType effectType, const std::string& subTypeName,
+                      TargetCondition general, TraitCondition trait, const DynamicValue& primary,
+                      const DynamicValue& secondary, const ExtraAttributes& extraAttribs);
     };
 
     class ConditionalEffect

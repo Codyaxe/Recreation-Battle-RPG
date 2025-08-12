@@ -5,6 +5,7 @@
 #include <iostream>
 #include <limits>
 #include <vector>
+#include <memory>
 #include <windows.h>
 
 class Character;
@@ -48,8 +49,8 @@ void clearScreen();
 class Game
 {
   public:
-    std::vector<Character*> enemies;
-    std::vector<Character*> allies;
+    std::vector<std::unique_ptr<Character>> enemies;
+    std::vector<std::unique_ptr<Character>> allies;
     BitsetWrapper<GameCondition> gameConditions;
 
     Game();
@@ -57,14 +58,15 @@ class Game
 };
 
 void displayMenu(int selectedIndex, Player& player, bool resetDisplay = true);
-void displayTargetMenu(int iter, int selectedIndex, std::vector<Character*>& targets,
-                       Observer& context);
-void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const ActionType& type);
+void displayTargetMenu(int iter, int selectedIndex,
+                       std::vector<std::unique_ptr<Character>>& targets, Observer& context);
+void displayChooseMenu(int selectedIndex, std::vector<std::unique_ptr<Action>>& inv,
+                       const ActionType& type);
 void displayPlayerSelect(int selectedIndex, std::vector<Player*>& allies);
 int menu(Game& game, Player& player);
 Action* menuChoose(Character& player, const ActionType& type);
-Action* menuChooseHelper(std::vector<Action*>& inv, const ActionType& type);
-int menuTarget(int iter, std::vector<Character*>& targets, Observer& context);
+Action* menuChooseHelper(std::vector<std::unique_ptr<Action>>& inv, const ActionType& type);
+int menuTarget(int iter, std::vector<std::unique_ptr<Character>>& targets, Observer& context);
 int selectPlayer(std::vector<Player*>& allies);
 void menuPlayer(Game& game);
 bool chooseTarget(Observer& context, TargetingComponent& targetingComponent);

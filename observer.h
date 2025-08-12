@@ -20,10 +20,11 @@
 #include <queue>
 #include <mutex>
 #include <tuple>
+#include <memory>
 #include <functional>
 #include <string_view>
 
-using ObservedData = std::tuple<EventConditions, Character*, std::string_view, TargetCondition>;
+using ObservedData = std::tuple<EventCondition, Character*, std::string_view, TargetCondition>;
 
 class Observer
 {
@@ -31,8 +32,8 @@ class Observer
     ActionType type;
     std::string name;
     Character& caster;
-    std::vector<Character*>& enemies;
-    std::vector<Character*>& allies;
+    std::vector<std::unique_ptr<Character>>& enemies;
+    std::vector<std::unique_ptr<Character>>& allies;
     std::vector<Character*> currentTargets;
     std::vector<int> damageDealt;
     TargetScope scope;
@@ -52,7 +53,7 @@ class GlobalEventObserver
   public:
     GlobalEventObserver() = default;
     void trigger(Game& game);
-    void enqueue(const EventConditions& event, Character* c = nullptr, std::string_view str = {},
+    void enqueue(const EventCondition& event, Character* c = nullptr, std::string_view str = {},
                  const TargetCondition& condition = TargetCondition::NONE);
 };
 

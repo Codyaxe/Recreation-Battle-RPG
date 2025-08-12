@@ -90,5 +90,3 @@ Fireball::Fireball() : Spell("Fireball", "A fiery blast against an enemy.")
     ui->executionPriority = 3;
     addComponent(std::move(ui));
 }
-
-void Fireball::operator()(Game& game, Character& player) { cast(game, player); }

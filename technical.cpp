@@ -25,15 +25,18 @@ Game::Game()
 {
     for (int i = 0; i < 6; i++)
     {
-        enemies.push_back(new Enemy());
+        auto enemy = std::make_unique<Enemy>();
+        enemies.push_back(std::move(enemy));
     }
     for (int i = 0; i < 6; i++)
     {
-        allies.push_back(new Player("Generic " + std::to_string(i)));
+        auto ally = std::make_unique<Player>("Generic " + std::to_string(i));
+        allies.push_back(std::move(ally));
     }
     for (int i = 0; i < 6; i++)
     {
-        allies[i]->spellInv.push_back(new Fireball());
+        auto spell = std::make_unique<Fireball>();
+        allies[i]->spellInv.push_back(std::move(spell));
     }
 }
 
@@ -62,7 +65,8 @@ void displayMenu(int selectedIndex, Player& player, bool resetDisplay)
     std::cout.flush();
 }
 
-void displayChooseMenu(int selectedIndex, std::vector<Action*>& inv, const ActionType& type)
+void displayChooseMenu(int selectedIndex, std::vector<std::unique_ptr<Action>>& inv,
+                       const ActionType& type)
 {
     clearScreen();
     switch (type)
@@ -302,7 +306,7 @@ Action* menuChoose(Character& player, const ActionType& type)
     return nullptr;
 }
 
-Action* menuChooseHelper(std::vector<Action*>& inv, const ActionType& type)
+Action* menuChooseHelper(std::vector<std::unique_ptr<Action>>& inv, const ActionType& type)
 {
     int count = 0;
     displayChooseMenu(count, inv, type);
@@ -340,7 +344,7 @@ Action* menuChooseHelper(std::vector<Action*>& inv, const ActionType& type)
                     clearScreen();
                     std::cout << "Choosing: " << inv[count]->name << "\n";
                     Sleep(1000);
-                    return inv[count];
+                    return inv[count].get();
                     break;
 
                 default:
@@ -453,9 +457,9 @@ int selectPlayer(std::vector<Player*>& allies)
 void menuPlayer(Game& game)
 {
     std::vector<Player*> tracker;
-    for (auto* player : game.allies)
+    for (auto& player : game.allies)
     {
-        tracker.push_back(dynamic_cast<Player*>(player));
+        tracker.push_back(dynamic_cast<Player*>(player.get()));
     }
     while (!tracker.empty())
     {
@@ -490,14 +494,16 @@ bool chooseTarget(Observer& context, TargetingComponent& targetingComponent)
     if (targetingComponent.faction == TargetFaction::ENEMIES ||
         targetingComponent.faction == TargetFaction::BOTH)
     {
-        potentialTargets.insert(potentialTargets.end(), context.enemies.begin(),
-                                context.enemies.end());
+        std::transform(context.enemies.begin(), context.enemies.end(),
+                       std::back_inserter(potentialTargets),
+                       [](const std::unique_ptr<Character>& c) { return c.get(); });
     }
     if (targetingComponent.faction == TargetFaction::ALLIES ||
         targetingComponent.faction == TargetFaction::BOTH)
     {
-        potentialTargets.insert(potentialTargets.end(), context.allies.begin(),
-                                context.allies.end());
+        std::transform(context.allies.begin(), context.allies.end(),
+                       std::back_inserter(potentialTargets),
+                       [](const std::unique_ptr<Character>& c) { return c.get(); });
     }
     if (targetingComponent.gameConditions.empty() && targetingComponent.targetConditions.empty())
     {

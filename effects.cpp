@@ -109,16 +109,35 @@ bool applyHeal(Observer& context, EffectComponent::PrimaryEffect& effect)
 
 bool applyBuff(Observer& context, EffectComponent::PrimaryEffect& effect)
 {
+    StatusContainer status = StatusContainer(effect.genericType, effect.primaryValue.value);
     for (auto& target : context.currentTargets)
     {
         target->targetConditions.set(effect.genericType);
+        target->statuses.push_back(status);
     }
     return true;
 };
 
-bool applyDebuff(Observer& context, EffectComponent::PrimaryEffect& effect) { return true; };
+bool applyDebuff(Observer& context, EffectComponent::PrimaryEffect& effect)
+{
+    StatusContainer status = StatusContainer(effect.genericType, effect.primaryValue.value);
+    for (auto& target : context.currentTargets)
+    {
 
-bool applyExhibit(Observer& context, EffectComponent::PrimaryEffect& effect) { return true; };
+        target->targetConditions.set(effect.genericType);
+        target->statuses.push_back(status);
+    }
+    return true;
+};
+
+bool applyExhibit(Observer& context, EffectComponent::PrimaryEffect& effect)
+{
+    for (auto& target : context.currentTargets)
+    {
+        target->traitConditions.set(effect.traitType);
+    }
+    return true;
+};
 
 bool applySummon(Observer& context, EffectComponent::PrimaryEffect& effect) { return true; };
 
