@@ -30,15 +30,17 @@ enum Return_Flags
 {
     EXIT = -1,
     SKIP = -2,
-    END = -3
+    END = -3,
+    END_BATTLE = -5
+
 };
 
-enum Action_Result
+enum class Action_Result
 {
     RESULT_NONE = 0,
     END_TURN = -1,
     SKIP_TURN = -2,
-    END_BATTLE = -5,
+    END_BATTLE_TURN = -5,
     CONTINUE_TURN = 1,
     EXTRA_TURN = 2,
     INTERRUPT_TURN = 3

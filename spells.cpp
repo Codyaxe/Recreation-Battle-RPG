@@ -1,18 +1,15 @@
 #include "spells.h"
-#include "character.h"
-#include "components.h"
 #include "effects.h"
 #include "observer.h"
-#include "technical.h"
 
 Spell::Spell(const std::string& name_, const std::string& description_)
     : Action(name_, description_)
 {
 }
 
-void Spell::addComponent(std::unique_ptr<Components> component)
+void Spell::addComponent(std::unique_ptr<Component> component)
 {
-    components.push_back(std::move(component));
+    Action::addComponent(std::move(component));
 }
 
 bool Spell::cast(Game& game, Character& player)
@@ -23,7 +20,7 @@ bool Spell::cast(Game& game, Character& player)
 
     // Sort components by execution priority
     std::sort(components.begin(), components.end(),
-              [](const std::unique_ptr<Components>& a, const std::unique_ptr<Components>& b)
+              [](const std::unique_ptr<Component>& a, const std::unique_ptr<Component>& b)
               { return a->executionPriority < b->executionPriority; });
 
     // Execute components in order
@@ -38,10 +35,10 @@ bool Spell::cast(Game& game, Character& player)
                 return false;
             }
 
-            // Stop execution if spell failed and component is not optional
-            if (context.states.game.has(GameCondition::SPELL_FAILED) && !component->isOptional)
+            if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
             {
-                std::cout << "Spell failed: " << context.failureReason << std::endl;
+                std::cout << "As you chanted the spell, you suddenly forgot how to speak: "
+                          << context.failureReason << std::endl;
                 break;
             }
         }

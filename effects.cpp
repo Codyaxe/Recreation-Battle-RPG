@@ -2,7 +2,6 @@
 #include "character.h"
 #include "observer.h"
 #include "technical.h"
-#include <algorithm>
 #include <unordered_map>
 
 bool applyDamage(Observer& context, EffectComponent::PrimaryEffect& effect)

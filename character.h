@@ -2,6 +2,7 @@
 #define CHARACTER_H
 
 #include "components.h"
+#include "technical.h"
 #include <bitset>
 #include <cstdint>
 #include <functional>
@@ -20,7 +21,7 @@ class Character
     struct MenuAction
     {
         std::string name;
-        std::function<int(Game& game)> execute;
+        std::function<Action_Result(Game& game)> execute;
     };
 
     std::vector<MenuAction> commands;
@@ -59,12 +60,13 @@ class Character
               int magic_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_,
               int luck_);
     virtual ~Character() = default;
-    virtual int attack(Game& game) = 0;
-    virtual int defend(Game& game) = 0;
-    virtual int item(Game& game) = 0;
-    virtual int skip(Game& game) = 0;
-    virtual int spell(Game& game) = 0;
-    virtual int summon(Game& game) = 0;
+    virtual Action_Result attack(Game& game) = 0;
+    virtual Action_Result defend(Game& game) = 0;
+    virtual Action_Result item(Game& game) = 0;
+    virtual Action_Result skip(Game& game) = 0;
+    virtual Action_Result end(Game& game) = 0;
+    virtual Action_Result spell(Game& game) = 0;
+    virtual Action_Result summon(Game& game) = 0;
 
     // Non-Pure Virtual On-Event
     virtual void onDeath(Game& game) {}
@@ -133,12 +135,13 @@ class Player : public Character
            int luck_, int barrier_, int shield_, int armor_);
 
     std::vector<Character::MenuAction> getMenuActions() override;
-    int attack(Game& game) override;
-    int defend(Game& game) override;
-    int spell(Game& game) override;
-    int item(Game& game) override;
-    int skip(Game& game) override;
-    int summon(Game& game) override;
+    Action_Result attack(Game& game) override;
+    Action_Result defend(Game& game) override;
+    Action_Result spell(Game& game) override;
+    Action_Result item(Game& game) override;
+    Action_Result skip(Game& game) override;
+    Action_Result end(Game& game) override;
+    Action_Result summon(Game& game) override;
 };
 
 class Enemy : public Character
@@ -148,12 +151,13 @@ class Enemy : public Character
     Enemy();
 
     std::vector<Character::MenuAction> getMenuActions() override;
-    int attack(Game& game) override;
-    int defend(Game& game) override;
-    int spell(Game& game) override;
-    int item(Game& game) override;
-    int skip(Game& game) override;
-    int summon(Game& game) override;
+    Action_Result attack(Game& game) override;
+    Action_Result defend(Game& game) override;
+    Action_Result spell(Game& game) override;
+    Action_Result item(Game& game) override;
+    Action_Result skip(Game& game) override;
+    Action_Result end(Game& game) override;
+    Action_Result summon(Game& game) override;
 };
 
 #endif

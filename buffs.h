@@ -2,8 +2,6 @@
 #define BUFFS_H
 
 #include "action.h"
-#include <string>
-#include <vector>
 
 class Character;
 class Player;
@@ -13,9 +11,17 @@ class Buff : public Action
 {
 
   public:
-    Buff(const std::string& name_, const std::string& description_) : Action(name_, description_) {}
+    Buff(const std::string& name_, const std::string& description_);
+    ~Buff() = default;
 
-    virtual void buff(Game& game, Player& player) = 0;
+    virtual bool buff(Game& game, Character& player);
+
+    void addComponent(std::unique_ptr<Component> component);
+
+    std::unique_ptr<Action> clone() const override
+    {
+        return std::make_unique<Buff>(name, description);
+    };
 };
 
 #endif

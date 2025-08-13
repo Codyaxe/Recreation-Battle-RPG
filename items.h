@@ -2,8 +2,6 @@
 #define ITEMS_H
 
 #include "action.h"
-#include <string>
-#include <vector>
 
 class Character;
 class Player;
@@ -13,9 +11,17 @@ class Item : public Action
 {
 
   public:
-    Item(const std::string& name_, const std::string& description_) : Action(name_, description_) {}
+    Item(const std::string& name_, const std::string& description_);
+    ~Item() = default;
 
-    virtual void use(Game& game, Player& player) = 0;
+    virtual bool use(Game& game, Character& player);
+
+    void addComponent(std::unique_ptr<Component> component);
+
+    std::unique_ptr<Action> clone() const override
+    {
+        return std::make_unique<Item>(name, description);
+    };
 };
 
 #endif

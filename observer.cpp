@@ -14,6 +14,13 @@ void GlobalEventObserver::enqueue(const EventCondition& event, Character* c, std
     std::lock_guard<std::mutex> lock(mutex);
     ObservedData eventToTrigger = {event, c, str, condition};
     events.push(eventToTrigger);
+    cv.notify_one(); // Notify waiting thread
+}
+
+void ::GlobalEventObserver::setQuit()
+{
+    gameQuit = true;
+    cv.notify_one();
 }
 
 void GlobalEventObserver::trigger(Game& game)
@@ -94,12 +101,23 @@ void GlobalEventObserver::trigger(Game& game)
 
     while (true)
     {
-        std::lock_guard<std::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
+
+        // Wait for events or quit signal
+        cv.wait(lock, [this] { return !events.empty() || gameQuit; });
+
+        if (gameQuit && events.empty())
+        {
+            std::cerr << "Game Successfully Quited!" << '\n';
+            Sleep(1000);
+            break;
+        }
+
         if (!events.empty())
         {
             ObservedData data = events.front();
             events.pop();
-            lock.~lock_guard();
+            lock.unlock(); // Release lock early
 
             EventCondition event = std::get<0>(data);
             Character* target = std::get<1>(data);
@@ -166,7 +184,7 @@ void GlobalEventObserver::trigger(Game& game)
             }
 
             std::cout << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
-            Sleep(1000);
+            Sleep(100); // Reduced sleep time for errors
         }
     }
 }

@@ -19,6 +19,7 @@
 #include <vector>
 #include <queue>
 #include <mutex>
+#include <condition_variable>
 #include <tuple>
 #include <memory>
 #include <functional>
@@ -49,10 +50,13 @@ class GlobalEventObserver
   private:
     std::queue<ObservedData> events;
     std::mutex mutex;
+    std::condition_variable cv;
+    bool gameQuit = false;
 
   public:
     GlobalEventObserver() = default;
     void trigger(Game& game);
+    void setQuit();
     void enqueue(const EventCondition& event, Character* c = nullptr, std::string_view str = {},
                  const TargetCondition& condition = TargetCondition::NONE);
 };

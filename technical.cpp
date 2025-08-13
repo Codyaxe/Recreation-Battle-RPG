@@ -23,6 +23,7 @@ void clearScreen()
 
 Game::Game()
 {
+    // To instantiate player and enemy objects including their inventories
     for (int i = 0; i < 6; i++)
     {
         auto enemy = std::make_unique<Enemy>();
@@ -133,7 +134,6 @@ void displayTargetMenu(int iter, int selectedIndex, std::vector<Character*>& tar
 
     default:
         std::cout << "Choose target " << iter + 1 << " to [REDACTED] " << context.name << " on: \n";
-        ;
         break;
     }
 
@@ -156,6 +156,7 @@ void displayTargetMenu(int iter, int selectedIndex, std::vector<Character*>& tar
 void displayPlayerSelect(int selectedIndex, std::vector<Player*>& allies)
 {
     clearScreen();
+    std::cout << "Choose a player:" << "\n\n";
     for (int i = 0; i < allies.size(); ++i)
     {
         if (i == selectedIndex)
@@ -212,27 +213,24 @@ int menu(Game& game, Player& player)
                     clearScreen();
                     std::cout << "Executing: " << player.commands[count].name << "\n";
                     std::cout << player.commands[count].name << " selected!\n";
-                    int result = player.commands[count].execute(game);
+                    Action_Result result = player.commands[count].execute(game);
                     switch (result)
                     {
-                    case END_TURN:
+                    case Action_Result::END_TURN:
                         return END;
-
-                    case SKIP_TURN:
+                    case Action_Result::SKIP_TURN:
                         return SKIP;
-
-                    case CONTINUE_TURN:
+                    case Action_Result::CONTINUE_TURN:
                         break;
-
-                    case EXTRA_TURN:
+                    case Action_Result::END_BATTLE_TURN:
+                        clearScreen();
+                        return END_BATTLE;
+                    case Action_Result::EXTRA_TURN:
                         break;
-
-                    case INTERRUPT_TURN:
-                        return END;
-
-                    case RESULT_NONE:
+                    case Action_Result::INTERRUPT_TURN:
                         break;
-
+                    case Action_Result::RESULT_NONE:
+                        break;
                     default:
                         break;
                     }
@@ -425,9 +423,10 @@ int selectPlayer(std::vector<Player*>& allies)
                 {
                 case VK_ESCAPE:
                     clearScreen();
-                    std::cout << "You must choose before you can exit!\n";
+                    std::cout << "You've quited the game" << '\n';
+                    // Keyboard Listening if Player wants to exit, cancel, or just end the turn
                     Sleep(1000);
-                    return EXIT;
+                    return END_BATTLE;
 
                 case VK_UP:
                     count = (count - 1 + allies.size()) % allies.size();
@@ -469,11 +468,21 @@ void menuPlayer(Game& game)
             selectedIndex = selectPlayer(tracker);
         } while (selectedIndex == EXIT);
 
+        if (selectedIndex == END_BATTLE)
+        {
+            return;
+        }
+
         Player& selectedPlayer = *tracker[selectedIndex];
         int menuState = menu(game, selectedPlayer);
         if (menuState == EXIT)
         {
             continue;
+        }
+        if (menuState == END_BATTLE)
+        {
+            // End Battle Turn Achieved
+            return;
         }
         tracker.erase(tracker.begin() + selectedIndex);
     }
@@ -660,5 +669,12 @@ void Interface::start()
     std::thread listener(&GlobalEventObserver::trigger, &eventObserver, std::ref(game));
     menuPlayer(game);
 
+    // While Loop For End Turn & Enemy Turn
+
+    // For now quit!
+    std::mutex mutex;
+    mutex.lock();
+    eventObserver.setQuit();
+    mutex.unlock();
     listener.join();
 }

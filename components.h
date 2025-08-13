@@ -113,7 +113,7 @@ enum class ComponentCategory
 enum class GameCondition : size_t
 {
     WAS_CRITICAL_HIT,
-    SPELL_FAILED,
+    FAILED,
     COUNT
 };
 
@@ -232,10 +232,10 @@ bool checkTargetHasCondition(const GameCondition& condition, Character* target);
 bool checkTargetHasCondition(const TargetCondition& condition, Character* target);
 bool processTargets(Observer& context, TargetingComponent& targetingComponent);
 
-class Components
+class Component
 {
   public:
-    virtual ~Components() = default;
+    virtual ~Component() = default;
     virtual bool execute(Observer& context) = 0;
     virtual bool shouldExecute(const Observer& context) const;
     virtual ComponentCategory getCategory() const = 0;
@@ -252,7 +252,7 @@ class Components
     virtual void onExecutionFailed(Observer& context, const std::string& reason);
 };
 
-class TargetingComponent : public Components
+class TargetingComponent : public Component
 {
   public:
     TargetSelectionMode mode;
@@ -268,7 +268,7 @@ class TargetingComponent : public Components
     bool execute(Observer& context) override;
 };
 
-class EffectComponent : public Components
+class EffectComponent : public Component
 {
   public:
     class PrimaryEffect
@@ -332,7 +332,7 @@ bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect effect);
 bool resolveConditional(Observer& context, EffectComponent::ConditionalEffect effect);
 bool resolveDelayed(Observer& context, EffectComponent::DelayedEffect effect);
 
-class MessageComponent : public Components
+class MessageComponent : public Component
 {
   private:
     bool processMessage(Observer& context, std::atomic<bool>& hasProceeded,

@@ -1,28 +1,5 @@
 #include "character.h"
 #include "spells.h"
-#include "technical.h"
-
-// class Character{
-
-//     public:
-//     std::vector<Spell*> spellInv;
-//     std::vector<Attack*> attackInv;
-//     std::vector<Summon*> summonInv;
-//     std::vector<Item*> itemInv;
-//     std::vector<Debuff*> debuffInv;
-//     std::vector<Buff*> buffInv;
-//     std::vector<Trait*> traitInv;
-//     std::string name;
-//     int health;
-//     int defense;
-//     int speed;
-//     int accuracy;
-
-//     int mana;
-//     int resistance;
-//     int weakness;
-
-// };
 
 Character::Character(std::string name_, std::string element_, int health_, int defense_, int power_,
                      int magic_, int speed_, int accuracy_, int mana_, int resistance_,
@@ -84,84 +61,96 @@ std::vector<Character::MenuAction> Player::getMenuActions()
             {"Spell", [this](Game& game) { return spell(game); }},
             {"Item", [this](Game& game) { return item(game); }},
             {"Summon", [this](Game& game) { return summon(game); }},
-            {"Skip", [this](Game& game) { return skip(game); }}};
+            {"Skip", [this](Game& game) { return skip(game); }},
+            {"End", [this](Game& game) { return end(game); }}};
 }
 
-int Player::attack(Game& game)
+Action_Result Player::attack(Game& game)
 {
     Sleep(1000);
-    return END_TURN; // Placeholder
+    return Action_Result::END_TURN; // Placeholder
 };
 
-int Player::defend(Game& game)
+Action_Result Player::defend(Game& game)
 {
     Sleep(1000);
-    return END_TURN; // Placeholder
+    return Action_Result::END_TURN; // Placeholder
 };
 
-int Player::spell(Game& game)
+Action_Result Player::spell(Game& game)
 {
     Action* action = menuChoose(*this, ActionType::SPELL);
     Spell* spell = dynamic_cast<Spell*>(action);
     if (spell == nullptr)
     {
-        return CONTINUE_TURN;
+        return Action_Result::CONTINUE_TURN;
     }
     if (!spell->cast(game, *this))
     {
-        return CONTINUE_TURN;
+        return Action_Result::CONTINUE_TURN;
     };
-    return END_TURN; // Placeholder
+    return Action_Result::END_TURN; // Placeholder
 };
 
-int Player::item(Game& game)
+Action_Result Player::item(Game& game)
 {
     Sleep(1000);
-    return CONTINUE_TURN;
+    return Action_Result::CONTINUE_TURN;
 };
 
-int Player::summon(Game& game)
+Action_Result Player::summon(Game& game)
 {
     Sleep(1000);
-    return END_TURN; // Placeholder
+    return Action_Result::END_TURN; // Placeholder
 };
 
-int Player::skip(Game& game)
+Action_Result Player::skip(Game& game)
 {
     Sleep(1000);
-    return SKIP_TURN;
+    return Action_Result::SKIP_TURN;
+};
+
+Action_Result Player::end(Game& game)
+{
+    Sleep(1000);
+    return Action_Result::END_BATTLE_TURN;
 };
 
 Enemy::Enemy() : Character("Generic Enemy", "Nature", 200, 50, 100, 100, 100, 100, 100, 0, 0, 1) {}
 
-int Enemy::attack(Game& game)
+Action_Result Enemy::attack(Game& game)
 {
-    return END_TURN; // Placeholder
+    return Action_Result::END_TURN; // Placeholder
 };
 
-int Enemy::defend(Game& game)
+Action_Result Enemy::defend(Game& game)
 {
-    return END_TURN; // Placeholder
+    return Action_Result::END_TURN; // Placeholder
 };
 
-int Enemy::spell(Game& game)
+Action_Result Enemy::spell(Game& game)
 {
-    return END_TURN; // Placeholder
+    return Action_Result::END_TURN; // Placeholder
 };
 
-int Enemy::item(Game& game)
+Action_Result Enemy::item(Game& game)
 {
-    return END_TURN; // Placeholder
+    return Action_Result::END_TURN; // Placeholder
 };
 
-int Enemy::summon(Game& game)
+Action_Result Enemy::summon(Game& game)
 {
-    return END_TURN; // Placeholder
+    return Action_Result::END_TURN; // Placeholder
 };
 
-int Enemy::skip(Game& game)
+Action_Result Enemy::skip(Game& game)
 {
-    return END_TURN; // Placeholder
+    return Action_Result::END_TURN; // Placeholder
+};
+
+Action_Result Enemy::end(Game& game)
+{
+    return Action_Result::END_TURN; // Placeholder
 };
 
 std::vector<Character::MenuAction> Enemy::getMenuActions()

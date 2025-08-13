@@ -241,19 +241,19 @@ EffectComponent::DelayedEffect::DelayedEffect(const PrimaryEffect& effect, int d
 {
 }
 
-// Components base class implementations
-bool Components::canExecute(const Observer& context) const
+// Component base class implementations
+bool Component::canExecute(const Observer& context) const
 {
-    return shouldExecute(context) && !context.states.game.has(GameCondition::SPELL_FAILED);
+    return shouldExecute(context) && !context.states.game.has(GameCondition::FAILED);
 }
 
-void Components::onExecutionFailed(Observer& context, const std::string& reason)
+void Component::onExecutionFailed(Observer& context, const std::string& reason)
 {
-    context.states.game.set(GameCondition::SPELL_FAILED);
+    context.states.game.set(GameCondition::FAILED);
     context.failureReason = reason;
 }
 
-bool Components::shouldExecute(const Observer& context) const
+bool Component::shouldExecute(const Observer& context) const
 {
     if (gameActivationConditions.empty() && targetActivationConditions.empty())
         return true;
