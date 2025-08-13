@@ -17,5 +17,4 @@ bool applySummon(Observer& context, EffectComponent::PrimaryEffect& effect);
 bool applyStats(Observer& context, EffectComponent::PrimaryEffect& effect);
 bool applyMove(Observer& context, EffectComponent::PrimaryEffect& effect);
 bool applyMisc(Observer& context, EffectComponent::PrimaryEffect& effect);
-
 #endif

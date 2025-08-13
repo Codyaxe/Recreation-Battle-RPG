@@ -13,6 +13,7 @@
 
 class Action;
 class Game;
+class Status;
 
 class Character
 {
@@ -34,6 +35,8 @@ class Character
     std::vector<std::unique_ptr<Action>> debuffInv;
     std::vector<std::unique_ptr<Action>> buffInv;
     std::vector<std::unique_ptr<Action>> traitInv;
+    std::vector<std::unique_ptr<Status>> statuses;
+    std::vector<std::unique_ptr<Trait>> acquiredTraits;
     std::string name;
     std::string element;
     int baseHealth;
@@ -43,16 +46,18 @@ class Character
     int magic;
     int speed;
     int accuracy;
+    int baseMana;
     int mana;
     int resistance;
     int weakness;
     int luck; // For Critical Hit Chance
+    // Status Based HP
+    int absorption = 0;
 
-    // A Bitmask That Will Handle State Flags
-    std::vector<StatusContainer> statuses;
-    BitsetWrapper<TargetCondition> targetConditions;
-
+    // A Bitmask That Will If The Character Has X Trait
     BitsetWrapper<TraitCondition> traitConditions;
+    // A Bitmask That Will Handle State Flags
+    BitsetWrapper<TargetCondition> targetConditions;
     // For Filtering if a Character has an On X Ablity
     BitsetWrapper<EventCondition> onEventsAbilities;
 

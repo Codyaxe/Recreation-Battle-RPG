@@ -2,6 +2,9 @@
 #define SPELLS_H
 
 #include "action.h"
+#include <string>
+#include <vector>
+#include <memory>
 
 class Spell : public Action
 {

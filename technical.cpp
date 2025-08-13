@@ -672,9 +672,6 @@ void Interface::start()
     // While Loop For End Turn & Enemy Turn
 
     // For now quit!
-    std::mutex mutex;
-    mutex.lock();
     eventObserver.setQuit();
-    mutex.unlock();
     listener.join();
 }

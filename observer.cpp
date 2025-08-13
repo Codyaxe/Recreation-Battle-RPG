@@ -1,6 +1,7 @@
 #include "observer.h"
 #include "character.h"
 #include "technical.h"
+#include <unordered_set>
 
 Observer::Observer(Character& c, Game& game)
     : caster(c), enemies(game.enemies), allies(game.allies), states()
@@ -19,9 +20,70 @@ void GlobalEventObserver::enqueue(const EventCondition& event, Character* c, std
 
 void ::GlobalEventObserver::setQuit()
 {
+    std::lock_guard<std::mutex> lock(mutex);
     gameQuit = true;
     cv.notify_one();
 }
+
+// bool GlobalEventObserver::isStatusRelevantEvent(EventCondition event)
+// {
+//     static const std::unordered_set<EventCondition> statusEvents = {
+//         EventCondition::ON_STATUS_TICK,
+//         EventCondition::ON_START_TURN,
+//         EventCondition::ON_END_TURN,
+//         EventCondition::ON_DAMAGE_TAKEN,
+//         EventCondition::ON_DEALING_DAMAGE,
+//         EventCondition::ON_HEAL,
+//         EventCondition::ON_DEATH,
+//         EventCondition::ON_CRIT,
+//         EventCondition::ON_BLOCK,
+//         EventCondition::ON_PARRY,
+//         EventCondition::ON_DODGE,
+//         EventCondition::ON_MISS,
+//         EventCondition::ON_KILL};
+//     return statusEvents.find(event) != statusEvents.end();
+// }
+
+// void GlobalEventObserver::checkAllStatusEffects(Game& game, EventCondition triggerEvent)
+// {
+//     if (!isStatusRelevantEvent(triggerEvent))
+//         return;
+
+//     for (auto& ally : game.allies)
+//     {
+//         if (!ally->statuses.empty())
+//         {
+//             processCharacterStatuses(game, ally.get(), triggerEvent);
+//         }
+//     }
+
+//     for (auto& enemy : game.enemies)
+//     {
+//         if (!enemy->statuses.empty())
+//         {
+//             processCharacterStatuses(game, enemy.get(), triggerEvent);
+//         }
+//     }
+// }
+
+// void GlobalEventObserver::processCharacterStatuses(Game& game, Character* character,
+//                                                    EventCondition triggerEvent)
+// {
+//     auto it = character->statuses.begin();
+//     while (it != character->statuses.end())
+//     {
+//         if (it->shouldTriggerOn(triggerEvent))
+//         {
+//             bool statusContinues = it->trigger(game, character);
+//             if (!statusContinues || it->isExpired())
+//             {
+//                 it = character->statuses.erase(it);
+//                 continue;
+//             }
+//         }
+//         ++it;
+//     }
+// }
 
 void GlobalEventObserver::trigger(Game& game)
 {
@@ -133,6 +195,7 @@ void GlobalEventObserver::trigger(Game& game)
                     if (it != stringEventMap.end())
                     {
                         it->second(target, game, str);
+                        // checkAllStatusEffects(game, event);
                         continue;
                     }
                 }
@@ -143,6 +206,7 @@ void GlobalEventObserver::trigger(Game& game)
                     if (it != conditionEventMap.end())
                     {
                         it->second(target, game, condition);
+                        // checkAllStatusEffects(game, event);
                         continue;
                     }
                 }
@@ -153,6 +217,7 @@ void GlobalEventObserver::trigger(Game& game)
                     if (it != simpleEventMap.end())
                     {
                         it->second(target, game);
+                        // checkAllStatusEffects(game, event);
                         continue;
                     }
                 }
@@ -179,6 +244,7 @@ void GlobalEventObserver::trigger(Game& game)
                     {
                         callEvent(enemy.get());
                     }
+                    // checkAllStatusEffects(game, event);
                     continue;
                 }
             }

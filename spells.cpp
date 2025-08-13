@@ -73,7 +73,7 @@ Fireball::Fireball() : Spell("Fireball", "A fiery blast against an enemy.")
     // Effect component
     auto effect = std::make_unique<EffectComponent>();
     auto primaryFX = EffectComponent::PrimaryEffect(EffectType::DAMAGE, "Fire", DynamicValue(200));
-    effect->primaryEffects.push_back(primaryFX);
+    effect->primaryEffects.push_back(std::move(primaryFX));
     effect->executionPriority = 2;
     addComponent(std::move(effect));
 

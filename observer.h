@@ -41,6 +41,8 @@ class Observer
     ConditionContainer states;
     std::string failureReason;
     int targetsDefeated = 0;
+    // For Status Effect
+    int statusStrength;
 
     Observer(Character& c, Game& game);
 };
@@ -52,6 +54,11 @@ class GlobalEventObserver
     std::mutex mutex;
     std::condition_variable cv;
     bool gameQuit = false;
+
+    // Status effect helper methods
+    // bool isStatusRelevantEvent(EventCondition event);
+    // void checkAllStatusEffects(Game& game, EventCondition triggerEvent);
+    // void processCharacterStatuses(Game& game, Character* character, EventCondition triggerEvent);
 
   public:
     GlobalEventObserver() = default;

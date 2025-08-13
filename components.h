@@ -15,6 +15,8 @@ class Character;
 class Player;
 class Enemy;
 class Game;
+class Trait;
+class Status;
 class TargetingComponent;
 class Observer;
 
@@ -66,6 +68,7 @@ enum class ActionType
     DEBUFF,
     BUFF,
     TRAIT,
+    STATUS,
     COUNT
 };
 
@@ -99,6 +102,7 @@ enum class DamageBasis
     SPEED,
     ACCURACY,
     MANA,
+    STATUS_STRENGTH,
     COUNT
 };
 
@@ -156,7 +160,7 @@ enum class EventCondition
     ON_TARGET_CHANGE,
     ON_TARGET_PLAY,
     ON_DAMAGE_TAKEN,
-    ON_DEALING_DAMAGE,
+    ON_DEALING_DAMAGE, //
     ON_HEAL,
     ON_GAIN_X,
     ON_LOSE_X,
@@ -170,6 +174,8 @@ enum class EventCondition
     ON_MISS,
     ON_KILL,
     ON_FATAL_DAMAGE,
+    ON_STATUS_TICK,
+    ON_STATUS_EXPIRE,
     COUNT
 };
 
@@ -185,18 +191,28 @@ template <typename Enum, size_t N = static_cast<size_t>(Enum::COUNT)> class Bits
     void clearAll() { bits.reset(); }
 };
 
-class StatusContainer
-{
-  public:
-    TargetCondition condition;
-    int duration;
+// class StatusContainer
+// {
+//   public:
+//     TargetCondition condition;
+//     EventCondition triggerEvent; // When this status should activate
+//     int duration;
+//     int value; // Effect strength (damage, heal amount, stat boost, etc.)
+//     bool isPermanent;
 
-    void reduce();
-    void increase();
+//     void reduce(int amount = 1);
+//     void increase(int amount = 1);
 
-    StatusContainer() = default;
-    StatusContainer(const TargetCondition& status, const int& value);
-};
+//     bool shouldTriggerOn(EventCondition event) const;
+//     bool trigger(Game& game, Character* character);
+//     bool isExpired() const;
+
+//     StatusContainer() = default;
+//     StatusContainer(const TargetCondition& status, const int& duration);
+//     StatusContainer(const TargetCondition& status, const int& duration, const int& effectValue);
+//     StatusContainer(const TargetCondition& status, const int& duration, const int& effectValue,
+//                     const EventCondition& trigger);
+// };
 
 class ConditionContainer
 {
@@ -276,8 +292,9 @@ class EffectComponent : public Component
       public:
         EffectType type;
         std::string subType;
-        TargetCondition genericType; // For Buffs, Debuffs
-        TraitCondition traitType;    // For Exhibit
+        TargetCondition genericType;
+        std::unique_ptr<Status> statusType; // For Buffs, Debuffs
+        std::unique_ptr<Trait> traitType;   // For Exhibit
         DynamicValue primaryValue;
         DynamicValue secondaryValue;
         ExtraAttributes extras;
@@ -290,8 +307,9 @@ class EffectComponent : public Component
                       const DynamicValue& primary, const DynamicValue& secondary,
                       const ExtraAttributes& extraAttribs);
         PrimaryEffect(EffectType effectType, const std::string& subTypeName,
-                      TargetCondition general, TraitCondition trait, const DynamicValue& primary,
-                      const DynamicValue& secondary, const ExtraAttributes& extraAttribs);
+                      std::unique_ptr<Status>& status, std::unique_ptr<Trait>& trait,
+                      const DynamicValue& primary, const DynamicValue& secondary,
+                      const ExtraAttributes& extraAttribs);
     };
 
     class ConditionalEffect
@@ -303,8 +321,8 @@ class EffectComponent : public Component
         ConditionLogic targetingConditionLogic;
 
         ConditionalEffect();
-        ConditionalEffect(const PrimaryEffect& effect);
-        ConditionalEffect(const PrimaryEffect& effect, const std::vector<GameCondition>& gameReqs,
+        ConditionalEffect(PrimaryEffect&& effect);
+        ConditionalEffect(PrimaryEffect&& effect, const std::vector<GameCondition>& gameReqs,
                           const std::vector<TargetCondition>& targetReqs,
                           const ConditionLogic& conditionLogic);
     };
@@ -316,7 +334,7 @@ class EffectComponent : public Component
         int turn;
 
         DelayedEffect();
-        DelayedEffect(const PrimaryEffect& effect, int delayTurns);
+        DelayedEffect(PrimaryEffect&& effect, int delayTurns);
     };
 
     std::vector<PrimaryEffect> primaryEffects;
@@ -328,9 +346,9 @@ class EffectComponent : public Component
     bool execute(Observer& context) override;
 };
 
-bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect effect);
-bool resolveConditional(Observer& context, EffectComponent::ConditionalEffect effect);
-bool resolveDelayed(Observer& context, EffectComponent::DelayedEffect effect);
+bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect& effect);
+bool resolveConditional(Observer& context, EffectComponent::ConditionalEffect& effect);
+bool resolveDelayed(Observer& context, EffectComponent::DelayedEffect& effect);
 
 class MessageComponent : public Component
 {

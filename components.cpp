@@ -7,10 +7,13 @@
 #include <limits>
 #include <random>
 #include <thread>
-StatusContainer::StatusContainer(const TargetCondition& status, const int& value)
-    : condition(status), duration(value)
-{
-}
+// void StatusContainer::increase(int value) { duration += value; }
+// void StatusContainer::reduce(int value) { duration -= value; }
+
+// StatusContainer::StatusContainer(const TargetCondition& status, const int& value)
+//     : condition(status), duration(value)
+// {
+// }
 
 DynamicValue::DynamicValue() : value(100), percentage(1.0), basis(DamageBasis::POWER) {}
 
@@ -48,6 +51,8 @@ int DynamicValue::calculate(Observer& context, DynamicValue& damage)
         return static_cast<int>((context.caster.accuracy * damage.percentage) + damage.value);
     case DamageBasis::MANA:
         return static_cast<int>((context.caster.mana * damage.percentage) + damage.value);
+    case DamageBasis::STATUS_STRENGTH:
+        return static_cast<int>(context.statusStrength * damage.value);
     }
     return 0;
 }
@@ -209,26 +214,29 @@ EffectComponent::PrimaryEffect::PrimaryEffect(EffectType effectType, const std::
 }
 
 EffectComponent::PrimaryEffect::PrimaryEffect(EffectType effectType, const std::string& subTypeName,
-                                              TargetCondition general, TraitCondition trait,
+                                              std::unique_ptr<Status>& status,
+                                              std::unique_ptr<Trait>& trait,
                                               const DynamicValue& primary,
                                               const DynamicValue& secondary,
                                               const ExtraAttributes& extraAttribs)
-    : type(effectType), subType(subTypeName), genericType(general), traitType(trait),
-      primaryValue(primary), secondaryValue(secondary), extras(extraAttribs)
+    : type(effectType), subType(subTypeName), statusType(std::move(status)),
+      traitType(std::move(trait)), primaryValue(primary), secondaryValue(secondary),
+      extras(extraAttribs)
 {
 }
 
 // ConditionalEffect constructor implementations
 EffectComponent::ConditionalEffect::ConditionalEffect() = default;
 
-EffectComponent::ConditionalEffect::ConditionalEffect(const PrimaryEffect& effect) : primary(effect)
+EffectComponent::ConditionalEffect::ConditionalEffect(PrimaryEffect&& effect)
+    : primary(std::move(effect))
 {
 }
 
 EffectComponent::ConditionalEffect::ConditionalEffect(
-    const PrimaryEffect& effect, const std::vector<GameCondition>& gameReqs,
+    PrimaryEffect&& effect, const std::vector<GameCondition>& gameReqs,
     const std::vector<TargetCondition>& targetReqs, const ConditionLogic& conditionLogic)
-    : primary(effect), gameConditions(gameReqs), targetConditions(targetReqs),
+    : primary(std::move(effect)), gameConditions(gameReqs), targetConditions(targetReqs),
       targetingConditionLogic(conditionLogic)
 {
 }
@@ -236,8 +244,8 @@ EffectComponent::ConditionalEffect::ConditionalEffect(
 // DelayedEffect constructor implementations
 EffectComponent::DelayedEffect::DelayedEffect() : turn(0) {}
 
-EffectComponent::DelayedEffect::DelayedEffect(const PrimaryEffect& effect, int delayTurns)
-    : primary(effect), turn(delayTurns)
+EffectComponent::DelayedEffect::DelayedEffect(PrimaryEffect&& effect, int delayTurns)
+    : primary(std::move(effect)), turn(delayTurns)
 {
 }
 
@@ -348,7 +356,7 @@ bool EffectComponent::execute(Observer& context)
     // A code that implements
 
     // Apply primary effects
-    for (const auto& effect : primaryEffects)
+    for (auto& effect : primaryEffects)
     {
         return resolvePrimary(context, effect);
     }
@@ -367,7 +375,7 @@ bool EffectComponent::execute(Observer& context)
     return true;
 }
 
-bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect effect)
+bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect& effect)
 {
     // Call function based on their effect type (eg. damage -> applyDamage(), heal -> applyHeal())
     switch (effect.type)
@@ -394,13 +402,13 @@ bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect effect)
     return false;
 }
 
-bool resolveConditional(Observer& context, EffectComponent::ConditionalEffect effect)
+bool resolveConditional(Observer& context, EffectComponent::ConditionalEffect& effect)
 {
     // For resolving effects with condition or none
     return resolvePrimary(context, effect.primary);
 }
 
-bool resolveDelayed(Observer& context, EffectComponent::DelayedEffect effect)
+bool resolveDelayed(Observer& context, EffectComponent::DelayedEffect& effect)
 {
     // For resolving effects with game condition or none
     return true;
