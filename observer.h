@@ -27,6 +27,7 @@
 
 using ObservedData = std::tuple<EventCondition, Character*, std::string_view, TargetCondition>;
 
+// Will split this into multiple battle context instead of this one big dump
 class Observer
 {
   public:
