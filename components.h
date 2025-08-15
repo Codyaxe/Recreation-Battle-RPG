@@ -2,6 +2,8 @@
 #define COMPONENTS_H
 
 #include "action.h"
+
+#include "return_flags.h"
 #include <any>
 #include <bitset>
 #include <map>
@@ -246,13 +248,13 @@ bool evaluate(const Observer& context, const GameCondition& condition);
 bool evaluate(const Observer& context, const TargetCondition& condition);
 bool checkTargetHasCondition(const GameCondition& condition, Character* target);
 bool checkTargetHasCondition(const TargetCondition& condition, Character* target);
-bool processTargets(Observer& context, TargetingComponent& targetingComponent);
+Return_Flags processTargets(Observer& context, TargetingComponent& targetingComponent);
 
 class Component
 {
   public:
     virtual ~Component() = default;
-    virtual bool execute(Observer& context) = 0;
+    virtual Return_Flags execute(Observer& context) = 0;
     virtual bool shouldExecute(const Observer& context) const;
     virtual ComponentCategory getCategory() const = 0;
     virtual std::string getComponentType() const = 0;
@@ -281,7 +283,7 @@ class TargetingComponent : public Component
 
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
-    bool execute(Observer& context) override;
+    Return_Flags execute(Observer& context) override;
 };
 
 class EffectComponent : public Component
@@ -293,6 +295,7 @@ class EffectComponent : public Component
         EffectType type;
         std::string subType;
         TargetCondition genericType;
+        TraitCondition secondGenericType;
         std::unique_ptr<Status> statusType; // For Buffs, Debuffs
         std::unique_ptr<Trait> traitType;   // For Exhibit
         DynamicValue primaryValue;
@@ -306,8 +309,12 @@ class EffectComponent : public Component
         PrimaryEffect(EffectType effectType, const std::string& subTypeName,
                       const DynamicValue& primary, const DynamicValue& secondary,
                       const ExtraAttributes& extraAttribs);
+        // For Debuffs/Buffs
+        PrimaryEffect(EffectType effectType, const TargetCondition& condition,
+                      std::unique_ptr<Status>&& status);
+        // Constructor that requires all attributes
         PrimaryEffect(EffectType effectType, const std::string& subTypeName,
-                      std::unique_ptr<Status>& status, std::unique_ptr<Trait>& trait,
+                      std::unique_ptr<Status>&& status, std::unique_ptr<Trait>&& trait,
                       const DynamicValue& primary, const DynamicValue& secondary,
                       const ExtraAttributes& extraAttribs);
     };
@@ -343,19 +350,18 @@ class EffectComponent : public Component
 
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
-    bool execute(Observer& context) override;
+    Return_Flags execute(Observer& context) override;
 };
 
-bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect& effect);
-bool resolveConditional(Observer& context, EffectComponent::ConditionalEffect& effect);
-bool resolveDelayed(Observer& context, EffectComponent::DelayedEffect& effect);
+Return_Flags resolvePrimary(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags resolveConditional(Observer& context, EffectComponent::ConditionalEffect& effect);
+Return_Flags resolveDelayed(Observer& context, EffectComponent::DelayedEffect& effect);
 
 class MessageComponent : public Component
 {
   private:
     bool processMessage(Observer& context, std::atomic<bool>& hasProceeded,
                         std::atomic<bool>& hasReachedEnd);
-    bool processSkip(std::atomic<bool>& hasProceeded, std::atomic<bool>& hasReachedEnd);
 
   public:
     class PrimaryText
@@ -363,11 +369,14 @@ class MessageComponent : public Component
       public:
         std::string text;
         bool typingMode;
+        bool isStatus = false;
         int delay;
 
         PrimaryText();
         PrimaryText(const std::string& textContent);
         PrimaryText(const std::string& textContent, bool enableTyping, int delayTime);
+        PrimaryText(const std::string& textContent, bool enableTyping, bool enableStatusSettings,
+                    int delayTime);
     };
 
     class ConditionalText
@@ -390,7 +399,7 @@ class MessageComponent : public Component
 
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
-    bool execute(Observer& context) override;
+    Return_Flags execute(Observer& context) override;
 };
 
 #endif

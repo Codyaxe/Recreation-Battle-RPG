@@ -6,12 +6,16 @@
 #include <limits>
 #include <vector>
 #include <memory>
+#include <mutex>
+#include <condition_variable>
 #include <windows.h>
+#include "return_flags.h"
 
 class Character;
 class Player;
 class Enemy;
 class Action;
+class Observer;
 
 const std::string RESET = "\033[0m";
 const std::string HIGHLIGHT = "\033[47;30m";
@@ -26,28 +30,20 @@ enum Target_Group
     NONE = 3
 };
 
-enum Return_Flags
-{
-    EXIT = -1,
-    SKIP = -2,
-    END = -3,
-    END_BATTLE = -5
-
-};
-
 enum class Action_Result
 {
-    RESULT_NONE = 0,
-    END_TURN = -1,
-    SKIP_TURN = -2,
-    END_BATTLE_TURN = -5,
-    CONTINUE_TURN = 1,
-    EXTRA_TURN = 2,
-    INTERRUPT_TURN = 3
+    RESULT_NONE,
+    END_TURN,
+    SKIP_TURN,
+    END_BATTLE_TURN,
+    CONTINUE_TURN,
+    EXTRA_TURN,
+    INTERRUPT_TURN
 };
 
 void clearScreen();
-
+bool processSkip(std::mutex& skipMutex, std::condition_variable& skipCv, bool& skipPressed,
+                 bool& shouldExit);
 class Game
 {
   public:
@@ -65,13 +61,14 @@ void displayTargetMenu(int iter, int selectedIndex,
 void displayChooseMenu(int selectedIndex, std::vector<std::unique_ptr<Action>>& inv,
                        const ActionType& type);
 void displayPlayerSelect(int selectedIndex, std::vector<Player*>& allies);
-int menu(Game& game, Player& player);
+Return_Flags menu(Game& game, Player& player);
 Action* menuChoose(Character& player, const ActionType& type);
 Action* menuChooseHelper(std::vector<std::unique_ptr<Action>>& inv, const ActionType& type);
-int menuTarget(int iter, std::vector<std::unique_ptr<Character>>& targets, Observer& context);
-int selectPlayer(std::vector<Player*>& allies);
-void menuPlayer(Game& game);
-bool chooseTarget(Observer& context, TargetingComponent& targetingComponent);
+Return_Flags menuTarget(int iter, std::vector<std::unique_ptr<Character>>& targets,
+                        Observer& context, int& selectedIndex);
+Return_Flags selectPlayer(std::vector<Player*>& allies, int& selectedIndex);
+Return_Flags menuPlayer(Game& game);
+Return_Flags chooseTarget(Observer& context, TargetingComponent& targetingComponent);
 
 class Interface
 {

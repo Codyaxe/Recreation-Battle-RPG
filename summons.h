@@ -14,11 +14,11 @@ class Summon : public Action
     Summon(const std::string& name_, const std::string& description_);
     ~Summon() = default;
 
-    virtual bool call(Game& game, Character& player);
+    virtual Return_Flags call(Game& game, Character& player);
 
     void addComponent(std::unique_ptr<Component> component);
 
-    std::unique_ptr<Action> clone() const override
+    virtual std::unique_ptr<Summon> clone() const
     {
         return std::make_unique<Summon>(name, description);
     };

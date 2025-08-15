@@ -14,11 +14,11 @@ class Debuff : public Action
     Debuff(const std::string& name_, const std::string& description_);
     ~Debuff() = default;
 
-    virtual bool afflict(Game& game, Character& player);
+    virtual Return_Flags afflict(Game& game, Character& player);
 
     void addComponent(std::unique_ptr<Component> component);
 
-    std::unique_ptr<Action> clone() const override
+    virtual std::unique_ptr<Debuff> clone() const
     {
         return std::make_unique<Debuff>(name, description);
     };

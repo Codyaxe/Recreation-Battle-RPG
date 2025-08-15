@@ -30,11 +30,13 @@ class Character
 
     std::vector<std::unique_ptr<Action>> spellInv;
     std::vector<std::unique_ptr<Action>> attackInv;
-    std::vector<std::unique_ptr<Action>> summonInv;
     std::vector<std::unique_ptr<Action>> itemInv;
+    // Special Actions
+    std::vector<std::unique_ptr<Action>> summonInv;
     std::vector<std::unique_ptr<Action>> debuffInv;
     std::vector<std::unique_ptr<Action>> buffInv;
     std::vector<std::unique_ptr<Action>> traitInv;
+
     std::vector<std::unique_ptr<Status>> statuses;
     std::vector<std::unique_ptr<Trait>> acquiredTraits;
     std::string name;
@@ -109,8 +111,6 @@ class Character
     virtual void onGainX(Game& game, TargetCondition condition) {}
     virtual void onLoseX(Game& game, TargetCondition condition) {}
     // Can add a condition X. If X happened, trigger Start and End Turn
-    virtual void onStartTurn(Game& game) {}
-    virtual void onEndTurn(Game& game) {}
     virtual void onCrit(Game& game) {}
     virtual void onBlock(Game& game) {}
     virtual void onParry(Game& game) {}
@@ -119,6 +119,9 @@ class Character
     virtual void onMiss(Game& game) {}
     virtual void onKill(Game& game) {}
     virtual void onTakingFatalDamage(Game& game) {}
+
+    virtual void onTurnEnd(Game& game) {}
+    virtual void onTurnStart(Game& game) {}
 
     virtual std::vector<MenuAction> getMenuActions();
     void initActions();
@@ -154,6 +157,7 @@ class Enemy : public Character
 
   public:
     Enemy();
+    Enemy(std::string name_);
 
     std::vector<Character::MenuAction> getMenuActions() override;
     Action_Result attack(Game& game) override;

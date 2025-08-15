@@ -85,7 +85,7 @@ Action_Result Player::spell(Game& game)
     {
         return Action_Result::CONTINUE_TURN;
     }
-    if (!spell->cast(game, *this))
+    if (spell->cast(game, *this) == Return_Flags::EXIT)
     {
         return Action_Result::CONTINUE_TURN;
     };
@@ -117,6 +117,10 @@ Action_Result Player::end(Game& game)
 };
 
 Enemy::Enemy() : Character("Generic Enemy", "Nature", 200, 50, 100, 100, 100, 100, 100, 0, 0, 1) {}
+Enemy::Enemy(std::string name_)
+    : Character(name_, "Nature", 200, 50, 100, 100, 100, 100, 100, 0, 0, 1)
+{
+}
 
 Action_Result Enemy::attack(Game& game)
 {

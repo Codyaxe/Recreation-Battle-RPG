@@ -14,8 +14,8 @@ class Spell : public Action
 
     void addComponent(std::unique_ptr<Component> component);
 
-    virtual bool cast(Game& game, Character& player);
-    std::unique_ptr<Action> clone() const override
+    virtual Return_Flags cast(Game& game, Character& player);
+    virtual std::unique_ptr<Spell> clone() const
     {
         return std::make_unique<Spell>(name, description);
     };
@@ -28,7 +28,17 @@ class Fireball : public Spell
     Fireball();
     ~Fireball() = default;
 
-    std::unique_ptr<Action> clone() const override { return std::make_unique<Fireball>(); };
+    std::unique_ptr<Spell> clone() const override { return std::make_unique<Fireball>(); };
+};
+
+class Poison_Gas : public Spell
+{
+
+  public:
+    Poison_Gas();
+    ~Poison_Gas() = default;
+
+    std::unique_ptr<Spell> clone() const override { return std::make_unique<Poison_Gas>(); };
 };
 
 #endif

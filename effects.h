@@ -5,16 +5,20 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include "return_flags.h"
 
 class Character;
 
-bool applyDamage(Observer& context, EffectComponent::PrimaryEffect& effect);
-bool applyHeal(Observer& context, EffectComponent::PrimaryEffect& effect);
-bool applyBuff(Observer& context, EffectComponent::PrimaryEffect& effect);
-bool applyDebuff(Observer& context, EffectComponent::PrimaryEffect& effect);
-bool applyExhibit(Observer& context, EffectComponent::PrimaryEffect& effect);
-bool applySummon(Observer& context, EffectComponent::PrimaryEffect& effect);
-bool applyStats(Observer& context, EffectComponent::PrimaryEffect& effect);
-bool applyMove(Observer& context, EffectComponent::PrimaryEffect& effect);
-bool applyMisc(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags applyDamage(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags applyHeal(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags applyBuff(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags applyDebuff(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags applyExhibit(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags removeBuff(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags removeDebuff(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags removeExhibit(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags applySummon(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags applyStats(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags applyMove(Observer& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags applyMisc(Observer& context, EffectComponent::PrimaryEffect& effect);
 #endif

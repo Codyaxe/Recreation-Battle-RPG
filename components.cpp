@@ -7,13 +7,6 @@
 #include <limits>
 #include <random>
 #include <thread>
-// void StatusContainer::increase(int value) { duration += value; }
-// void StatusContainer::reduce(int value) { duration -= value; }
-
-// StatusContainer::StatusContainer(const TargetCondition& status, const int& value)
-//     : condition(status), duration(value)
-// {
-// }
 
 DynamicValue::DynamicValue() : value(100), percentage(1.0), basis(DamageBasis::POWER) {}
 
@@ -81,7 +74,7 @@ bool checkTargetHasCondition(const TargetCondition& condition, Character* target
     return false;
 }
 
-bool processTargets(Observer& context, TargetingComponent& targetingComponent)
+Return_Flags processTargets(Observer& context, TargetingComponent& targetingComponent)
 {
     // If the observer has current targets, due to spells having two targeting phases for two
     // effects, clear previous targets.
@@ -187,7 +180,7 @@ bool processTargets(Observer& context, TargetingComponent& targetingComponent)
         }
     }
 
-    return !context.currentTargets.empty();
+    return Return_Flags::SUCCESS;
 }
 
 // PrimaryEffect constructor implementations
@@ -212,10 +205,16 @@ EffectComponent::PrimaryEffect::PrimaryEffect(EffectType effectType, const std::
       extras(extraAttribs)
 {
 }
+EffectComponent::PrimaryEffect::PrimaryEffect(EffectType effectType,
+                                              const TargetCondition& condition,
+                                              std::unique_ptr<Status>&& status)
+    : type(effectType), genericType(condition), statusType(std::move(status))
+{
+}
 
 EffectComponent::PrimaryEffect::PrimaryEffect(EffectType effectType, const std::string& subTypeName,
-                                              std::unique_ptr<Status>& status,
-                                              std::unique_ptr<Trait>& trait,
+                                              std::unique_ptr<Status>&& status,
+                                              std::unique_ptr<Trait>&& trait,
                                               const DynamicValue& primary,
                                               const DynamicValue& secondary,
                                               const ExtraAttributes& extraAttribs)
@@ -312,7 +311,7 @@ ComponentCategory TargetingComponent::getCategory() const { return ComponentCate
 
 std::string TargetingComponent::getComponentType() const { return "TargetingComponent"; }
 
-bool TargetingComponent::execute(Observer& context)
+Return_Flags TargetingComponent::execute(Observer& context)
 {
     // Adjusts the numberofTarget variable depending on the target scope chosen
     if (scope == TargetScope::SINGLE)
@@ -327,7 +326,7 @@ bool TargetingComponent::execute(Observer& context)
     if (context.enemies.empty() && faction == TargetFaction::ENEMIES)
     {
         onExecutionFailed(context, "No enemies available to target");
-        return true;
+        return Return_Flags::FAILED;
     }
     // Executes function depending on target selection mode
     if (mode == TargetSelectionMode::MANUAL)
@@ -345,12 +344,12 @@ ComponentCategory EffectComponent::getCategory() const { return ComponentCategor
 
 std::string EffectComponent::getComponentType() const { return "EffectComponent"; }
 
-bool EffectComponent::execute(Observer& context)
+Return_Flags EffectComponent::execute(Observer& context)
 {
     if (context.currentTargets.empty() && context.scope != TargetScope::NONE)
     {
         onExecutionFailed(context, "No targets available for effects");
-        return true;
+        return Return_Flags::FAILED;
     }
 
     // A code that implements
@@ -372,10 +371,10 @@ bool EffectComponent::execute(Observer& context)
     {
         // Placeholder
     }
-    return true;
+    return Return_Flags::SUCCESS;
 }
 
-bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags resolvePrimary(Observer& context, EffectComponent::PrimaryEffect& effect)
 {
     // Call function based on their effect type (eg. damage -> applyDamage(), heal -> applyHeal())
     switch (effect.type)
@@ -383,35 +382,35 @@ bool resolvePrimary(Observer& context, EffectComponent::PrimaryEffect& effect)
     case EffectType::DAMAGE:
         return applyDamage(context, effect);
     case EffectType::HEAL:
-        return true;
+        return applyHeal(context, effect);
     case EffectType::BUFF:
-        return true;
+        return applyBuff(context, effect);
     case EffectType::DEBUFF:
-        return true;
+        return applyDebuff(context, effect);
     case EffectType::EXHIBIT:
-        return true;
+        return applyExhibit(context, effect);
     case EffectType::SUMMON:
-        return true;
+        return Return_Flags::SUCCESS;
     case EffectType::STATS:
-        return true;
+        return applyStats(context, effect);
     case EffectType::MOVE:
-        return true;
+        return Return_Flags::SUCCESS;
     case EffectType::MISC:
-        return true;
+        return Return_Flags::SUCCESS;
     }
-    return false;
+    return Return_Flags::FAILED;
 }
 
-bool resolveConditional(Observer& context, EffectComponent::ConditionalEffect& effect)
+Return_Flags resolveConditional(Observer& context, EffectComponent::ConditionalEffect& effect)
 {
     // For resolving effects with condition or none
     return resolvePrimary(context, effect.primary);
 }
 
-bool resolveDelayed(Observer& context, EffectComponent::DelayedEffect& effect)
+Return_Flags resolveDelayed(Observer& context, EffectComponent::DelayedEffect& effect)
 {
     // For resolving effects with game condition or none
-    return true;
+    return Return_Flags::SUCCESS;
 }
 
 // PrimaryText constructor implementations
@@ -425,6 +424,12 @@ MessageComponent::PrimaryText::PrimaryText(const std::string& textContent)
 MessageComponent::PrimaryText::PrimaryText(const std::string& textContent, bool enableTyping,
                                            int delayTime)
     : text(textContent), typingMode(enableTyping), delay(delayTime)
+{
+}
+
+MessageComponent::PrimaryText::PrimaryText(const std::string& textContent, bool enableTyping,
+                                           bool enableStatusSettings, int delayTime)
+    : text(textContent), typingMode(enableTyping), isStatus(enableStatusSettings), delay(delayTime)
 {
 }
 
@@ -449,8 +454,34 @@ std::string MessageComponent::getComponentType() const { return "MessageComponen
 bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasProceeded,
                                       std::atomic<bool>& hasReachedEnd)
 {
+    // Start a thread to listen for the first skip (typing animation skip)
+    std::mutex typingSkipMutex;
+    std::condition_variable typingSkipCv;
+    bool typingSkipPressed = false;
+    bool typingSkipShouldExit = false;
+    std::atomic<bool> typingPhaseComplete{false};
+
+    std::thread typingSkipListener(
+        [&]()
+        {
+            // Only listen for skips during the typing phase
+            while (!typingPhaseComplete.load())
+            {
+                processSkip(typingSkipMutex, typingSkipCv, typingSkipPressed, typingSkipShouldExit);
+                if (typingSkipPressed)
+                {
+                    hasProceeded.store(true);
+                    break;
+                }
+            }
+        });
+
     std::string storeSkippedString;
-    clearScreen();
+    if (!primaryTexts[0].isStatus)
+    {
+        clearScreen();
+    }
+
     for (const auto& current : primaryTexts)
     {
         // I might do an in-place storing instead so I don't have to clear the screen. For now do
@@ -458,7 +489,7 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
         storeSkippedString += current.text + '\n';
         if (!hasProceeded.load())
         {
-            if (current.typingMode)
+            if (current.typingMode && !current.isStatus)
             {
                 const size_t batchSize = 3; // Batch based flushing
                 const auto& text = current.text;
@@ -554,7 +585,7 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
             storeSkippedString += primary.text + '\n';
             if (!hasProceeded.load())
             {
-                if (primary.typingMode)
+                if (primary.typingMode && !primary.isStatus)
                 {
                     const size_t batchSize = 3;
                     for (size_t i = 0; i < primary.text.size(); i += batchSize)
@@ -589,15 +620,34 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
         }
     }
 
-    // Process Observer Dependent Text
+    // Process observer dependent text
+    std::string generic;
     for (int i = 0; i < context.currentTargets.size(); i++)
     {
-        std::string generic = "You have dealt " + std::to_string(context.damageDealt[i]) + " to " +
-                              context.currentTargets[i]->name + " using " + context.name;
+        if (context.actionType != ActionType::STATUS)
+        {
+            switch (context.effectType)
+            {
+            case EffectType::DAMAGE:
+                generic = context.caster.name + " have dealt " +
+                          std::to_string(context.damageDealt[i]) + " to " +
+                          context.currentTargets[i]->name + " using " + context.name + '\n';
+            }
+        }
+        else
+        {
+            switch (context.effectType)
+            {
+            case EffectType::DAMAGE:
+                generic = context.caster.name + " is dealt " +
+                          std::to_string(context.damageDealt[i]) + " damage due to " +
+                          context.name + '\n';
+            }
+        }
         storeSkippedString += generic + '\n';
         if (!hasProceeded.load())
         {
-            if (primaryTexts[0].typingMode)
+            if (primaryTexts[0].typingMode && !primaryTexts[0].isStatus)
             {
                 const size_t batchSize = 3;
                 const auto text = generic;
@@ -639,78 +689,71 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
         clearScreen();
         std::cout << storeSkippedString;
     }
-    hasReachedEnd.store(true);
 
-    std::atomic<bool> hasProceededToNext{false};
-    std::atomic<bool> hasProceededToNextEnd{false};
+    // Mark typing phase as complete
+    typingPhaseComplete.store(true);
+    {
+        std::lock_guard<std::mutex> lock(typingSkipMutex);
+        typingSkipShouldExit = true;
+    }
+    typingSkipCv.notify_one();
+    typingSkipListener.join();
 
-    std::thread wait(&MessageComponent::processSkip, this, std::ref(hasProceededToNext),
-                     std::ref(hasProceededToNextEnd));
-
-    std::cout << "Press Enter to continue...";
+    if (!primaryTexts[0].isStatus)
+    {
+        std::cout << "Press Enter to continue...";
+    }
 
     int dotCount = 0;
     const int maxDots = 3;
     int counter = 0;
 
-    while (!hasProceededToNext.load())
+    // For second skip
+    std::mutex skipMutex;
+    std::condition_variable skipCv;
+    bool skipPressed = false;
+    bool shouldExit = false;
+
+    std::thread wait([&]() { processSkip(skipMutex, skipCv, skipPressed, shouldExit); });
+
     {
-        Sleep(50);
-
-        if (++counter % 6 == 0)
+        std::unique_lock<std::mutex> lock(skipMutex);
+        while (!skipPressed && !primaryTexts[0].isStatus)
         {
-            std::cout << '\r' << "Press Enter to continue   " << "\b\b\b";
-            for (int i = 0; i < dotCount; ++i)
-                std::cout << '.';
-            std::cout << std::flush;
+            if (skipCv.wait_for(lock, std::chrono::milliseconds(300),
+                                [&skipPressed] { return skipPressed; }))
+            {
+                break;
+            }
 
-            dotCount = (dotCount + 1) % (maxDots + 1);
+            // Update dots animation
+            if (++counter % 2 == 0)
+            {
+                std::cout << '\r' << "Press Enter to continue   " << "\b\b\b";
+                for (int i = 0; i < dotCount; ++i)
+                    std::cout << '.';
+                std::cout << std::flush;
+
+                dotCount = (dotCount + 1) % (maxDots + 1);
+            }
         }
+        shouldExit = true;
     }
 
-    hasProceededToNextEnd.store(true);
     wait.join();
 
     return true;
 }
 
-bool MessageComponent::processSkip(std::atomic<bool>& hasProceeded,
-                                   std::atomic<bool>& hasReachedEnd)
-{
-    INPUT_RECORD inputRecord;
-    DWORD eventsRead;
-
-    while (!hasReachedEnd.load())
-    {
-        DWORD waitResult = WaitForSingleObject(Interface::hIn, 50);
-
-        if (waitResult == WAIT_OBJECT_0)
-        {
-            if (ReadConsoleInput(Interface::hIn, &inputRecord, 1, &eventsRead) && eventsRead > 0)
-            {
-                if (inputRecord.EventType == KEY_EVENT && inputRecord.Event.KeyEvent.bKeyDown &&
-                    inputRecord.Event.KeyEvent.wVirtualKeyCode == VK_RETURN)
-                {
-                    hasProceeded.store(true);
-                    break;
-                }
-            }
-        }
-    }
-    return true;
-}
-
-bool MessageComponent::execute(Observer& context)
+Return_Flags MessageComponent::execute(Observer& context)
 {
     std::atomic<bool> hasSkipped{false};
     std::atomic<bool> hasReachedEnd{false};
+
     std::thread message(&MessageComponent::processMessage, this, std::ref(context),
                         std::ref(hasSkipped), std::ref(hasReachedEnd));
-    std::thread input(&MessageComponent::processSkip, this, std::ref(hasSkipped),
-                      std::ref(hasReachedEnd));
 
     message.join();
-    input.join();
 
-    return true;
+    return Return_Flags::SUCCESS;
 }

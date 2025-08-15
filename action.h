@@ -1,6 +1,7 @@
 #ifndef ACTION_H
 #define ACTION_H
 #include "components.h"
+#include "return_flags.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -22,10 +23,9 @@ class Action
     Action();
     Action(const std::string& name_, const std::string& description_);
 
-    ~Action() = default;
+    virtual ~Action() = default;
 
     void addComponent(std::unique_ptr<Component> component);
-    virtual std::unique_ptr<Action> clone() const = 0;
 };
 
 #endif

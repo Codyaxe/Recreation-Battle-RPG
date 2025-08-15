@@ -21,12 +21,49 @@ void clearScreen()
     std::cout.flush();
 }
 
+bool processSkip(std::mutex& skipMutex, std::condition_variable& skipCv, bool& skipPressed,
+                 bool& shouldExit)
+{
+
+    INPUT_RECORD inputRecord;
+    DWORD eventsRead;
+
+    while (true)
+    {
+        {
+            std::lock_guard<std::mutex> lock(skipMutex);
+            if (shouldExit)
+                break;
+        }
+
+        DWORD waitResult = WaitForSingleObject(Interface::hIn, 50);
+
+        if (waitResult == WAIT_OBJECT_0)
+        {
+            if (ReadConsoleInput(Interface::hIn, &inputRecord, 1, &eventsRead) && eventsRead > 0)
+            {
+                if (inputRecord.EventType == KEY_EVENT && inputRecord.Event.KeyEvent.bKeyDown &&
+                    inputRecord.Event.KeyEvent.wVirtualKeyCode == VK_RETURN)
+                {
+                    {
+                        std::lock_guard<std::mutex> lock(skipMutex);
+                        skipPressed = true;
+                    }
+                    skipCv.notify_one();
+                    break;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 Game::Game()
 {
     // To instantiate player and enemy objects including their inventories
     for (int i = 0; i < 6; i++)
     {
-        auto enemy = std::make_unique<Enemy>();
+        auto enemy = std::make_unique<Enemy>("Generic " + std::to_string(i));
         enemies.push_back(std::move(enemy));
     }
     for (int i = 0; i < 6; i++)
@@ -37,7 +74,9 @@ Game::Game()
     for (int i = 0; i < 6; i++)
     {
         auto spell = std::make_unique<Fireball>();
+        auto spell_2 = std::make_unique<Poison_Gas>();
         allies[i]->spellInv.push_back(std::move(spell));
+        allies[i]->spellInv.push_back(std::move(spell_2));
     }
 }
 
@@ -114,7 +153,7 @@ void displayTargetMenu(int iter, int selectedIndex, std::vector<Character*>& tar
 {
     clearScreen();
 
-    switch (context.type)
+    switch (context.actionType)
     {
     case ActionType::SPELL:
         std::cout << "Choose target " << iter + 1 << " to cast " << context.name << " on: \n";
@@ -173,7 +212,7 @@ void displayPlayerSelect(int selectedIndex, std::vector<Player*>& allies)
     std::cout.flush();
 }
 
-int menu(Game& game, Player& player)
+Return_Flags menu(Game& game, Player& player)
 {
     int count = 0;
     displayMenu(count, player);
@@ -196,7 +235,7 @@ int menu(Game& game, Player& player)
                     clearScreen();
                     std::cout << "Action selection exited.\n";
                     Sleep(1000);
-                    return EXIT;
+                    return Return_Flags::EXIT;
 
                 case VK_UP:
                     count = (count - 1 + player.commandsSize) % player.commandsSize;
@@ -217,14 +256,14 @@ int menu(Game& game, Player& player)
                     switch (result)
                     {
                     case Action_Result::END_TURN:
-                        return END;
+                        return Return_Flags::END;
                     case Action_Result::SKIP_TURN:
-                        return SKIP;
+                        return Return_Flags::SKIP;
                     case Action_Result::CONTINUE_TURN:
                         break;
                     case Action_Result::END_BATTLE_TURN:
                         clearScreen();
-                        return END_BATTLE;
+                        return Return_Flags::END_BATTLE;
                     case Action_Result::EXTRA_TURN:
                         break;
                     case Action_Result::INTERRUPT_TURN:
@@ -353,7 +392,8 @@ Action* menuChooseHelper(std::vector<std::unique_ptr<Action>>& inv, const Action
     }
 }
 
-int menuTarget(int iter, std::vector<Character*>& targets, Observer& context)
+Return_Flags menuTarget(int iter, std::vector<Character*>& targets, Observer& context,
+                        int& selectedIndex)
 {
     int count = 0;
     displayTargetMenu(iter, count, targets, context);
@@ -375,7 +415,7 @@ int menuTarget(int iter, std::vector<Character*>& targets, Observer& context)
                 case VK_ESCAPE:
                     clearScreen();
                     std::cout << "Target Menu exited.\n";
-                    return EXIT;
+                    return Return_Flags::EXIT;
 
                 case VK_UP:
                     count = (count - 1 + targets.size()) % targets.size();
@@ -390,8 +430,8 @@ int menuTarget(int iter, std::vector<Character*>& targets, Observer& context)
                 case VK_RETURN:
                     clearScreen();
                     std::cout << "Targeting: " << targets[count]->name << "\n";
-                    return count;
-                    break;
+                    selectedIndex = count;
+                    return Return_Flags::SUCCESS;
 
                 default:
                     break;
@@ -401,7 +441,7 @@ int menuTarget(int iter, std::vector<Character*>& targets, Observer& context)
     }
 }
 
-int selectPlayer(std::vector<Player*>& allies)
+Return_Flags selectPlayer(std::vector<Player*>& allies, int& selectedIndex)
 {
 
     int count = 0;
@@ -426,7 +466,7 @@ int selectPlayer(std::vector<Player*>& allies)
                     std::cout << "You've quited the game" << '\n';
                     // Keyboard Listening if Player wants to exit, cancel, or just end the turn
                     Sleep(1000);
-                    return END_BATTLE;
+                    return Return_Flags::QUIT;
 
                 case VK_UP:
                     count = (count - 1 + allies.size()) % allies.size();
@@ -442,8 +482,8 @@ int selectPlayer(std::vector<Player*>& allies)
                     clearScreen();
                     std::cout << "Selecting: " << allies[count]->name << "\n";
                     Sleep(1000);
-                    return count;
-                    break;
+                    selectedIndex = count;
+                    return Return_Flags::SUCCESS;
 
                 default:
                     break;
@@ -453,7 +493,7 @@ int selectPlayer(std::vector<Player*>& allies)
     }
 }
 
-void menuPlayer(Game& game)
+Return_Flags menuPlayer(Game& game)
 {
     std::vector<Player*> tracker;
     for (auto& player : game.allies)
@@ -463,32 +503,37 @@ void menuPlayer(Game& game)
     while (!tracker.empty())
     {
         int selectedIndex;
+        Return_Flags selectResult;
         do
         {
-            selectedIndex = selectPlayer(tracker);
-        } while (selectedIndex == EXIT);
+            Return_Flags selectResult = selectPlayer(tracker, selectedIndex);
+        } while (selectResult == Return_Flags::EXIT);
 
-        if (selectedIndex == END_BATTLE)
+        if (selectResult == Return_Flags::END_BATTLE)
         {
-            return;
+            return Return_Flags::END_BATTLE;
+        }
+        if (selectResult == Return_Flags::QUIT)
+        {
+            return Return_Flags::QUIT;
         }
 
         Player& selectedPlayer = *tracker[selectedIndex];
-        int menuState = menu(game, selectedPlayer);
-        if (menuState == EXIT)
+        Return_Flags menuResult = menu(game, selectedPlayer);
+        if (menuResult == Return_Flags::EXIT)
         {
             continue;
         }
-        if (menuState == END_BATTLE)
+        if (menuResult == Return_Flags::END_BATTLE)
         {
-            // End Battle Turn Achieved
-            return;
+            return Return_Flags::END_BATTLE;
         }
         tracker.erase(tracker.begin() + selectedIndex);
     }
+    return Return_Flags::SUCCESS;
 }
 
-bool chooseTarget(Observer& context, TargetingComponent& targetingComponent)
+Return_Flags chooseTarget(Observer& context, TargetingComponent& targetingComponent)
 {
     // If the observer has current targets, due to spells having two targeting phases for two
     // effects, clear previous targets.
@@ -582,19 +627,18 @@ bool chooseTarget(Observer& context, TargetingComponent& targetingComponent)
 
         while (i < targetingComponent.numberOfTargets)
         {
-            // Shall the user exited, return false indicating targeting is exited
-            selectedIndex = menuTarget(i, validTargets, context);
-            if (selectedIndex == EXIT)
+            Return_Flags resultTarget = menuTarget(i, validTargets, context, selectedIndex);
+            if (resultTarget == Return_Flags::EXIT)
             {
-                return false;
+                return Return_Flags::EXIT;
             }
             context.currentTargets.push_back(validTargets[selectedIndex]);
             validTargets.erase(validTargets.begin() + selectedIndex);
             i++;
         }
-        return true;
+        return Return_Flags::SUCCESS;
     }
-    return true;
+    return Return_Flags::SUCCESS;
 };
 
 bool Interface::enableFlags()
@@ -663,13 +707,25 @@ void Interface::start()
 {
 
     SetConsoleTitleW(L"Battle RPG");
-    // A Global Event Listener Thread Will Be Used Here
     Game game;
     static GlobalEventObserver eventObserver;
     std::thread listener(&GlobalEventObserver::trigger, &eventObserver, std::ref(game));
-    menuPlayer(game);
 
-    // While Loop For End Turn & Enemy Turn
+    while (true)
+    {
+        Return_Flags resultGame = menuPlayer(game);
+        if (resultGame == Return_Flags::END_BATTLE)
+        {
+            eventObserver.enqueue(EventCondition::ON_END_TURN);
+            eventObserver.waitForEventProcessing();
+        }
+        if (resultGame == Return_Flags::QUIT)
+        {
+            break;
+        }
+    }
+
+    // While loop for end turn and enemy turn
 
     // For now quit!
     eventObserver.setQuit();

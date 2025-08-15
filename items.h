@@ -14,11 +14,11 @@ class Item : public Action
     Item(const std::string& name_, const std::string& description_);
     ~Item() = default;
 
-    virtual bool use(Game& game, Character& player);
+    virtual Return_Flags use(Game& game, Character& player);
 
     void addComponent(std::unique_ptr<Component> component);
 
-    std::unique_ptr<Action> clone() const override
+    virtual std::unique_ptr<Item> clone() const
     {
         return std::make_unique<Item>(name, description);
     };

@@ -1,3 +1,4 @@
+#include "return_flags.h"
 #include "action.cpp"
 #include "attacks.cpp"
 #include "buffs.cpp"
@@ -10,7 +11,6 @@
 #include "observer.cpp"
 #include "spells.cpp"
 #include "technical.cpp"
-
 
 // Using Windows Console API, Starting From Scratch
 

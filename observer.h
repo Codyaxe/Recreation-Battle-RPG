@@ -30,13 +30,15 @@ using ObservedData = std::tuple<EventCondition, Character*, std::string_view, Ta
 class Observer
 {
   public:
-    ActionType type;
+    ActionType actionType;
+    EffectType effectType;
     std::string name;
     Character& caster;
     std::vector<std::unique_ptr<Character>>& enemies;
     std::vector<std::unique_ptr<Character>>& allies;
     std::vector<Character*> currentTargets;
     std::vector<int> damageDealt;
+    std::vector<Return_Flags> statusState;
     TargetScope scope;
     ConditionContainer states;
     std::string failureReason;
@@ -55,10 +57,15 @@ class GlobalEventObserver
     std::condition_variable cv;
     bool gameQuit = false;
 
+    // Synchronization for main thread waiting
+    std::mutex processMutex;
+    std::condition_variable processCv;
+    bool eventProcessed = false;
+
     // Status effect helper methods
-    // bool isStatusRelevantEvent(EventCondition event);
-    // void checkAllStatusEffects(Game& game, EventCondition triggerEvent);
-    // void processCharacterStatuses(Game& game, Character* character, EventCondition triggerEvent);
+    bool isStatusRelevantEvent(EventCondition event);
+    void checkAllStatusEffects(Game& game, EventCondition triggerEvent);
+    void processCharacterStatuses(Game& game, Character* character, EventCondition triggerEvent);
 
   public:
     GlobalEventObserver() = default;
@@ -66,6 +73,7 @@ class GlobalEventObserver
     void setQuit();
     void enqueue(const EventCondition& event, Character* c = nullptr, std::string_view str = {},
                  const TargetCondition& condition = TargetCondition::NONE);
+    void waitForEventProcessing(); // New method for main thread to wait
 };
 
 #endif

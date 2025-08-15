@@ -1,7 +1,11 @@
 #include "observer.h"
+#include "status.h"
 #include "character.h"
 #include "technical.h"
+#include <algorithm>
 #include <unordered_set>
+#include <thread>
+#include <chrono>
 
 Observer::Observer(Character& c, Game& game)
     : caster(c), enemies(game.enemies), allies(game.allies), states()
@@ -12,9 +16,18 @@ Observer::Observer(Character& c, Game& game)
 void GlobalEventObserver::enqueue(const EventCondition& event, Character* c, std::string_view str,
                                   const TargetCondition& condition)
 {
-    std::lock_guard<std::mutex> lock(mutex);
-    ObservedData eventToTrigger = {event, c, str, condition};
-    events.push(eventToTrigger);
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        ObservedData eventToTrigger = {event, c, str, condition};
+        events.push(eventToTrigger);
+    }
+
+    // Reset the processed flag before notifying
+    {
+        std::lock_guard<std::mutex> processLock(processMutex);
+        eventProcessed = false;
+    }
+
     cv.notify_one(); // Notify waiting thread
 }
 
@@ -25,65 +38,95 @@ void ::GlobalEventObserver::setQuit()
     cv.notify_one();
 }
 
-// bool GlobalEventObserver::isStatusRelevantEvent(EventCondition event)
-// {
-//     static const std::unordered_set<EventCondition> statusEvents = {
-//         EventCondition::ON_STATUS_TICK,
-//         EventCondition::ON_START_TURN,
-//         EventCondition::ON_END_TURN,
-//         EventCondition::ON_DAMAGE_TAKEN,
-//         EventCondition::ON_DEALING_DAMAGE,
-//         EventCondition::ON_HEAL,
-//         EventCondition::ON_DEATH,
-//         EventCondition::ON_CRIT,
-//         EventCondition::ON_BLOCK,
-//         EventCondition::ON_PARRY,
-//         EventCondition::ON_DODGE,
-//         EventCondition::ON_MISS,
-//         EventCondition::ON_KILL};
-//     return statusEvents.find(event) != statusEvents.end();
-// }
+void GlobalEventObserver::waitForEventProcessing()
+{
+    std::unique_lock<std::mutex> lock(processMutex);
+    processCv.wait(lock, [this] { return eventProcessed; });
+}
 
-// void GlobalEventObserver::checkAllStatusEffects(Game& game, EventCondition triggerEvent)
-// {
-//     if (!isStatusRelevantEvent(triggerEvent))
-//         return;
+bool GlobalEventObserver::isStatusRelevantEvent(EventCondition event)
+{
+    static const std::unordered_set<EventCondition> statusEvents = {
+        EventCondition::ON_STATUS_TICK,
+        EventCondition::ON_START_TURN,
+        EventCondition::ON_END_TURN,
+        EventCondition::ON_DAMAGE_TAKEN,
+        EventCondition::ON_DEALING_DAMAGE,
+        EventCondition::ON_HEAL,
+        EventCondition::ON_DEATH,
+        EventCondition::ON_CRIT,
+        EventCondition::ON_BLOCK,
+        EventCondition::ON_PARRY,
+        EventCondition::ON_DODGE,
+        EventCondition::ON_MISS,
+        EventCondition::ON_KILL};
+    return statusEvents.find(event) != statusEvents.end();
+}
 
-//     for (auto& ally : game.allies)
-//     {
-//         if (!ally->statuses.empty())
-//         {
-//             processCharacterStatuses(game, ally.get(), triggerEvent);
-//         }
-//     }
+void GlobalEventObserver::checkAllStatusEffects(Game& game, EventCondition triggerEvent)
+{
+    if (!isStatusRelevantEvent(triggerEvent))
+    {
+        return;
+    }
 
-//     for (auto& enemy : game.enemies)
-//     {
-//         if (!enemy->statuses.empty())
-//         {
-//             processCharacterStatuses(game, enemy.get(), triggerEvent);
-//         }
-//     }
-// }
+    for (auto& ally : game.allies)
+    {
+        if (!ally->statuses.empty())
+        {
+            processCharacterStatuses(game, ally.get(), triggerEvent);
+        }
+    }
 
-// void GlobalEventObserver::processCharacterStatuses(Game& game, Character* character,
-//                                                    EventCondition triggerEvent)
-// {
-//     auto it = character->statuses.begin();
-//     while (it != character->statuses.end())
-//     {
-//         if (it->shouldTriggerOn(triggerEvent))
-//         {
-//             bool statusContinues = it->trigger(game, character);
-//             if (!statusContinues || it->isExpired())
-//             {
-//                 it = character->statuses.erase(it);
-//                 continue;
-//             }
-//         }
-//         ++it;
-//     }
-// }
+    for (auto& enemy : game.enemies)
+    {
+        if (!enemy->statuses.empty())
+        {
+            processCharacterStatuses(game, enemy.get(), triggerEvent);
+        }
+    }
+}
+
+void GlobalEventObserver::processCharacterStatuses(Game& game, Character* character,
+                                                   EventCondition triggerEvent)
+{
+    std::cout << "Processing status effects for character: " << character->name
+              << " on event: " << static_cast<int>(triggerEvent) << std::endl;
+    Sleep(1000);
+
+    auto it = character->statuses.begin();
+    while (it != character->statuses.end())
+    {
+        const auto& status = *it;
+        const auto& activationConditions = status->activationConditions;
+
+        // Check if this status should trigger on the current event
+        bool shouldTrigger = std::any_of(activationConditions.begin(), activationConditions.end(),
+                                         [triggerEvent](const auto& condition)
+                                         { return condition == triggerEvent; });
+
+        if (shouldTrigger)
+        {
+            std::cout << "Triggering status effect: " << status->name
+                      << " (Duration: " << status->duration << ")" << std::endl;
+            Sleep(1000);
+
+            status->trigger(game, character);
+
+            // Remove expired status effects
+            if (status->duration <= 0)
+            {
+                std::cout << "Status effect expired and removed: " << status->name << std::endl;
+                Sleep(1000);
+
+                status->expire(game, character);
+                it = character->statuses.erase(it);
+                continue;
+            }
+        }
+        ++it;
+    }
+}
 
 void GlobalEventObserver::trigger(Game& game)
 {
@@ -161,6 +204,11 @@ void GlobalEventObserver::trigger(Game& game)
              [](Character* c, Game& g, std::string_view s) { c->onTargetPlay(g, s); }},
         };
 
+    static const std::unordered_map<EventCondition, std::function<void(Character*, Game&)>>
+        genericEventMap = {
+            {EventCondition::ON_START_TURN, [](Character* c, Game& g) { c->onTurnStart(g); }},
+            {EventCondition::ON_END_TURN, [](Character* c, Game& g) { c->onTurnEnd(g); }}};
+
     while (true)
     {
         std::unique_lock<std::mutex> lock(mutex);
@@ -195,8 +243,11 @@ void GlobalEventObserver::trigger(Game& game)
                     if (it != stringEventMap.end())
                     {
                         it->second(target, game, str);
-                        // checkAllStatusEffects(game, event);
-                        continue;
+                        checkAllStatusEffects(game, event);
+                    }
+                    else
+                    {
+                        std::cerr << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
                     }
                 }
                 // Handle events with condition parameter
@@ -206,51 +257,114 @@ void GlobalEventObserver::trigger(Game& game)
                     if (it != conditionEventMap.end())
                     {
                         it->second(target, game, condition);
-                        // checkAllStatusEffects(game, event);
-                        continue;
+                        checkAllStatusEffects(game, event);
+                    }
+                    else
+                    {
+                        std::cerr << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
                     }
                 }
-                // Handle simple events (no extra parameters)
+                // Handle simple events character parameters only
                 else
                 {
                     auto it = simpleEventMap.find(event);
                     if (it != simpleEventMap.end())
                     {
                         it->second(target, game);
-                        // checkAllStatusEffects(game, event);
-                        continue;
+                        checkAllStatusEffects(game, event);
+                    }
+                    else
+                    {
+                        std::cerr << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
                     }
                 }
             }
             else
             {
                 // Handle target events
-                auto it = targetEventMap.find(event);
-                if (it != targetEventMap.end())
+                if (!str.empty())
                 {
-                    auto callEvent = [&](Character* character)
+                    auto it = targetEventMap.find(event);
+                    if (it != targetEventMap.end())
                     {
-                        if (character->onEventsAbilities.has(event))
+                        auto callEvent = [&](Character* target)
                         {
-                            it->second(character, game, str);
-                        }
-                    };
+                            if (target->onEventsAbilities.has(event))
+                            {
+                                it->second(target, game, str);
+                            }
+                        };
 
-                    for (auto& ally : game.allies)
-                    {
-                        callEvent(ally.get());
+                        for (auto& ally : game.allies)
+                        {
+                            callEvent(ally.get());
+                        }
+                        for (auto& enemy : game.enemies)
+                        {
+                            callEvent(enemy.get());
+                        }
                     }
-                    for (auto& enemy : game.enemies)
+                    else
                     {
-                        callEvent(enemy.get());
+                        std::cerr << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
                     }
-                    // checkAllStatusEffects(game, event);
-                    continue;
+                    checkAllStatusEffects(game, event);
+                }
+                else
+                {
+                    auto it = genericEventMap.find(event);
+                    if (it != genericEventMap.end())
+                    {
+                        auto callEvent = [&](Character* target)
+                        {
+                            if (target->onEventsAbilities.has(event))
+                            {
+                                it->second(target, game);
+                            }
+                        };
+
+                        for (auto& ally : game.allies)
+                        {
+                            callEvent(ally.get());
+                        }
+                        for (auto& enemy : game.enemies)
+                        {
+                            callEvent(enemy.get());
+                        }
+                    }
+                    else
+                    {
+                        std::cerr << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
+                    }
+                    checkAllStatusEffects(game, event);
                 }
             }
 
-            std::cout << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
-            Sleep(100); // Reduced sleep time for errors
+            // Allow user to skip status effect animations with condition variable
+            std::mutex skipMutex;
+            std::condition_variable skipCv;
+            bool skipPressed = false;
+            bool shouldExit = false;
+
+            std::cout << "Press Enter to continue.";
+
+            std::thread listener([&]()
+                                 { processSkip(skipMutex, skipCv, skipPressed, shouldExit); });
+
+            {
+                std::unique_lock<std::mutex> lock(skipMutex);
+                skipCv.wait_for(lock, std::chrono::seconds(5),
+                                [&skipPressed] { return skipPressed; });
+                shouldExit = true;
+            }
+
+            listener.join();
+
+            {
+                std::lock_guard<std::mutex> processLock(processMutex);
+                eventProcessed = true;
+            }
+            processCv.notify_one();
         }
     }
 }

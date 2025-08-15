@@ -7,11 +7,11 @@ Summon::Summon(const std::string& name_, const std::string& description_)
 {
 }
 
-bool Summon::call(Game& game, Character& player)
+Return_Flags Summon::call(Game& game, Character& player)
 {
     Observer context(player, game);
     context.name = name;
-    context.type = ActionType::SUMMON;
+    context.actionType = ActionType::SUMMON;
 
     // Sort components by execution priority
     std::sort(components.begin(), components.end(),
@@ -25,9 +25,9 @@ bool Summon::call(Game& game, Character& player)
         if (component->canExecute(context))
         {
             // If targeting was exited return back to the menu, false indicates user exited
-            if (!component->execute(context))
+            if (component->execute(context) == Return_Flags::EXIT)
             {
-                return false;
+                return Return_Flags::EXIT;
             }
 
             if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
@@ -38,7 +38,7 @@ bool Summon::call(Game& game, Character& player)
             }
         }
     }
-    return true;
+    return Return_Flags::SUCCESS;
 }
 
 void Summon::addComponent(std::unique_ptr<Component> component)

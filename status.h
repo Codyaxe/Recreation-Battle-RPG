@@ -12,17 +12,19 @@ class Status : public Action
 
   public:
     std::vector<EventCondition> activationConditions;
+    TargetCondition condition;
     int duration;
     int strength = 0;
     Status(const std::string& name_, const std::string& description_);
     ~Status() = default;
 
-    virtual bool trigger(Game& game, Character* player);
+    virtual Return_Flags trigger(Game& game, Character* player);
+    virtual Return_Flags expire(Game& game, Character* player);
     // virtual bool expiration(Game& game, Character* player);
 
     void addComponent(std::unique_ptr<Component> component);
 
-    std::unique_ptr<Action> clone() const override
+    virtual std::unique_ptr<Status> clone() const
     {
         return std::make_unique<Status>(name, description);
     };
@@ -32,9 +34,13 @@ class Poison : public Status
 {
   public:
     Poison();
+    Poison(int dur, int str);
     ~Poison() = default;
 
-    std::unique_ptr<Action> clone() const override { return std::make_unique<Poison>(); };
+    std::unique_ptr<Status> clone() const override
+    {
+        return std::make_unique<Poison>(duration, strength);
+    };
 };
 
 #endif

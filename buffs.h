@@ -14,11 +14,11 @@ class Buff : public Action
     Buff(const std::string& name_, const std::string& description_);
     ~Buff() = default;
 
-    virtual bool buff(Game& game, Character& player);
+    virtual Return_Flags buff(Game& game, Character& player);
 
     void addComponent(std::unique_ptr<Component> component);
 
-    std::unique_ptr<Action> clone() const override
+    virtual std::unique_ptr<Buff> clone() const
     {
         return std::make_unique<Buff>(name, description);
     };

@@ -14,13 +14,10 @@ class Trait : public Action
     Trait(const std::string& name_, const std::string& description_);
     ~Trait() = default;
 
-    virtual bool exhibit(Game& game, Character& player);
+    virtual Return_Flags exhibit(Game& game, Character& player);
 
     void addComponent(std::unique_ptr<Component> component);
 
-    std::unique_ptr<Action> clone() const override
-    {
-        return std::make_unique<Trait>(name, description);
-    };
+    virtual std::unique_ptr<Trait> clone() const { return std::make_unique<Trait>(name, description); };
 };
 #endif

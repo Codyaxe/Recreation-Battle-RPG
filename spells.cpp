@@ -1,4 +1,5 @@
 #include "spells.h"
+#include "status.h"
 #include "effects.h"
 #include "observer.h"
 
@@ -12,11 +13,11 @@ void Spell::addComponent(std::unique_ptr<Component> component)
     Action::addComponent(std::move(component));
 }
 
-bool Spell::cast(Game& game, Character& player)
+Return_Flags Spell::cast(Game& game, Character& player)
 {
     Observer context(player, game);
     context.name = name;
-    context.type = ActionType::SPELL;
+    context.actionType = ActionType::SPELL;
 
     // Sort components by execution priority
     std::sort(components.begin(), components.end(),
@@ -30,9 +31,9 @@ bool Spell::cast(Game& game, Character& player)
         if (component->canExecute(context))
         {
             // If targeting was exited return back to the menu, false indicates user exited
-            if (!component->execute(context))
+            if (component->execute(context) == Return_Flags::EXIT)
             {
-                return false;
+                return Return_Flags::EXIT;
             }
 
             if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
@@ -43,7 +44,7 @@ bool Spell::cast(Game& game, Character& player)
             }
         }
     }
-    return true;
+    return Return_Flags::SUCCESS;
 }
 
 /*For making string cost cheaper in case I would reuse this. Could use string_view but this one is
@@ -84,6 +85,32 @@ Fireball::Fireball() : Spell("Fireball", "A fiery blast against an enemy.")
     {
         ui->primaryTexts.push_back(MessageComponent::PrimaryText(FireballText::TEXTS[i], true, 50));
     }
+    ui->executionPriority = 3;
+    addComponent(std::move(ui));
+}
+
+Poison_Gas::Poison_Gas() : Spell("Poison Gas", "A gas that poisons your target.")
+{
+    // Targeting component
+    auto targeting = std::make_unique<TargetingComponent>();
+    targeting->mode = TargetSelectionMode::MANUAL;
+    targeting->scope = TargetScope::SINGLE;
+    targeting->faction = TargetFaction::ENEMIES;
+    targeting->executionPriority = 1;
+    addComponent(std::move(targeting));
+
+    // Effect component
+    auto effect = std::make_unique<EffectComponent>();
+    auto primaryFX = EffectComponent::PrimaryEffect(EffectType::DEBUFF, TargetCondition::POISON,
+                                                    std::make_unique<Poison>(5, 2));
+    effect->primaryEffects.push_back(std::move(primaryFX));
+    effect->executionPriority = 2;
+    addComponent(std::move(effect));
+
+    // UI component
+    auto ui = std::make_unique<MessageComponent>();
+    ui->primaryTexts.push_back(
+        MessageComponent::PrimaryText("Poisonous gas swirls around your enemy!", true, 50));
     ui->executionPriority = 3;
     addComponent(std::move(ui));
 }
