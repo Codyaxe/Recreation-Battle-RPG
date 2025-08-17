@@ -7,13 +7,13 @@
 #include <thread>
 #include <chrono>
 
-Observer::Observer(Character& c, Game& game)
-    : caster(c), enemies(game.enemies), allies(game.allies), states()
+BattleContext::BattleContext(Character& c, Game& game)
+    : source(c), enemies(game.enemies), allies(game.allies), states()
 {
     states.game = game.gameConditions;
 }
 
-void GlobalEventObserver::enqueue(const EventCondition& event, Character* c, std::string_view str,
+void EventObserver::enqueue(const EventCondition& event, Character* c, std::string_view str,
                                   const TargetCondition& condition)
 {
     {
@@ -31,20 +31,20 @@ void GlobalEventObserver::enqueue(const EventCondition& event, Character* c, std
     cv.notify_one(); // Notify waiting thread
 }
 
-void ::GlobalEventObserver::setQuit()
+void ::EventObserver::setQuit()
 {
     std::lock_guard<std::mutex> lock(mutex);
     gameQuit = true;
     cv.notify_one();
 }
 
-void GlobalEventObserver::waitForEventProcessing()
+void EventObserver::waitForEventProcessing()
 {
     std::unique_lock<std::mutex> lock(processMutex);
     processCv.wait(lock, [this] { return eventProcessed; });
 }
 
-bool GlobalEventObserver::isStatusRelevantEvent(EventCondition event)
+bool EventObserver::isStatusRelevantEvent(EventCondition event)
 {
     static const std::unordered_set<EventCondition> statusEvents = {
         EventCondition::ON_STATUS_TICK,
@@ -63,7 +63,7 @@ bool GlobalEventObserver::isStatusRelevantEvent(EventCondition event)
     return statusEvents.find(event) != statusEvents.end();
 }
 
-void GlobalEventObserver::checkAllStatusEffects(Game& game, EventCondition triggerEvent)
+void EventObserver::checkAllStatusEffects(Game& game, EventCondition triggerEvent)
 {
     if (!isStatusRelevantEvent(triggerEvent))
     {
@@ -87,7 +87,7 @@ void GlobalEventObserver::checkAllStatusEffects(Game& game, EventCondition trigg
     }
 }
 
-void GlobalEventObserver::processCharacterStatuses(Game& game, Character* character,
+void EventObserver::processCharacterStatuses(Game& game, Character* character,
                                                    EventCondition triggerEvent)
 {
     std::cout << "Processing status effects for character: " << character->name
@@ -128,7 +128,7 @@ void GlobalEventObserver::processCharacterStatuses(Game& game, Character* charac
     }
 }
 
-void GlobalEventObserver::trigger(Game& game)
+void EventObserver::trigger(Game& game)
 {
     // Event maps for different handler signatures
     static const std::unordered_map<EventCondition,
@@ -348,10 +348,12 @@ void GlobalEventObserver::trigger(Game& game)
 
             std::cout << "Press Enter to continue.";
 
+            // Skip option for status effect
             std::thread listener([&]()
                                  { processSkip(skipMutex, skipCv, skipPressed, shouldExit); });
 
             {
+                // Signals exit after 5 seconds if the enter key is not pressed
                 std::unique_lock<std::mutex> lock(skipMutex);
                 skipCv.wait_for(lock, std::chrono::seconds(5),
                                 [&skipPressed] { return skipPressed; });

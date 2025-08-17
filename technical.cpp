@@ -21,6 +21,7 @@ void clearScreen()
     std::cout.flush();
 }
 
+// Waits for the user to press enter
 bool processSkip(std::mutex& skipMutex, std::condition_variable& skipCv, bool& skipPressed,
                  bool& shouldExit)
 {
@@ -30,6 +31,7 @@ bool processSkip(std::mutex& skipMutex, std::condition_variable& skipCv, bool& s
 
     while (true)
     {
+        // For cases that requires the thread to end immediately without pressing enter
         {
             std::lock_guard<std::mutex> lock(skipMutex);
             if (shouldExit)
@@ -149,7 +151,7 @@ void displayChooseMenu(int selectedIndex, std::vector<std::unique_ptr<Action>>& 
 }
 
 void displayTargetMenu(int iter, int selectedIndex, std::vector<Character*>& targets,
-                       Observer& context)
+                       BattleContext& context)
 {
     clearScreen();
 
@@ -392,7 +394,7 @@ Action* menuChooseHelper(std::vector<std::unique_ptr<Action>>& inv, const Action
     }
 }
 
-Return_Flags menuTarget(int iter, std::vector<Character*>& targets, Observer& context,
+Return_Flags menuTarget(int iter, std::vector<Character*>& targets, BattleContext& context,
                         int& selectedIndex)
 {
     int count = 0;
@@ -533,7 +535,7 @@ Return_Flags menuPlayer(Game& game)
     return Return_Flags::SUCCESS;
 }
 
-Return_Flags chooseTarget(Observer& context, TargetingComponent& targetingComponent)
+Return_Flags chooseTarget(BattleContext& context, TargetingComponent& targetingComponent)
 {
     // If the observer has current targets, due to spells having two targeting phases for two
     // effects, clear previous targets.
@@ -708,16 +710,16 @@ void Interface::start()
 
     SetConsoleTitleW(L"Battle RPG");
     Game game;
-    static GlobalEventObserver eventObserver;
-    std::thread listener(&GlobalEventObserver::trigger, &eventObserver, std::ref(game));
+    static EventObserver eventBattleContext;
+    std::thread listener(&EventObserver::trigger, &eventBattleContext, std::ref(game));
 
     while (true)
     {
         Return_Flags resultGame = menuPlayer(game);
         if (resultGame == Return_Flags::END_BATTLE)
         {
-            eventObserver.enqueue(EventCondition::ON_END_TURN);
-            eventObserver.waitForEventProcessing();
+            eventBattleContext.enqueue(EventCondition::ON_END_TURN);
+            eventBattleContext.waitForEventProcessing();
         }
         if (resultGame == Return_Flags::QUIT)
         {
@@ -728,6 +730,6 @@ void Interface::start()
     // While loop for end turn and enemy turn
 
     // For now quit!
-    eventObserver.setQuit();
+    eventBattleContext.setQuit();
     listener.join();
 }

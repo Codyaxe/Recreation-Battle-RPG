@@ -15,7 +15,7 @@ class Character;
 class Player;
 class Enemy;
 class Action;
-class Observer;
+class BattleContext;
 
 const std::string RESET = "\033[0m";
 const std::string HIGHLIGHT = "\033[47;30m";
@@ -57,7 +57,7 @@ class Game
 
 void displayMenu(int selectedIndex, Player& player, bool resetDisplay = true);
 void displayTargetMenu(int iter, int selectedIndex,
-                       std::vector<std::unique_ptr<Character>>& targets, Observer& context);
+                       std::vector<std::unique_ptr<Character>>& targets, BattleContext& context);
 void displayChooseMenu(int selectedIndex, std::vector<std::unique_ptr<Action>>& inv,
                        const ActionType& type);
 void displayPlayerSelect(int selectedIndex, std::vector<Player*>& allies);
@@ -65,10 +65,10 @@ Return_Flags menu(Game& game, Player& player);
 Action* menuChoose(Character& player, const ActionType& type);
 Action* menuChooseHelper(std::vector<std::unique_ptr<Action>>& inv, const ActionType& type);
 Return_Flags menuTarget(int iter, std::vector<std::unique_ptr<Character>>& targets,
-                        Observer& context, int& selectedIndex);
+                        BattleContext& context, int& selectedIndex);
 Return_Flags selectPlayer(std::vector<Player*>& allies, int& selectedIndex);
 Return_Flags menuPlayer(Game& game);
-Return_Flags chooseTarget(Observer& context, TargetingComponent& targetingComponent);
+Return_Flags chooseTarget(BattleContext& context, TargetingComponent& targetingComponent);
 
 class Interface
 {

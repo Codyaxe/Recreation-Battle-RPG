@@ -25,38 +25,38 @@ DynamicValue::DynamicValue(int fixedValue, double percentageValue, DamageBasis d
 {
 }
 
-int DynamicValue::calculate(Observer& context, DynamicValue& damage)
+int DynamicValue::calculate(BattleContext& context, DynamicValue& damage)
 {
     // Base the damage on a particular stat.
     switch (damage.basis)
     {
     case DamageBasis::POWER:
-        return static_cast<int>((context.caster.power * damage.percentage) + damage.value);
+        return static_cast<int>((context.source.power * damage.percentage) + damage.value);
     case DamageBasis::MAGIC:
-        return static_cast<int>((context.caster.magic * damage.percentage) + damage.value);
+        return static_cast<int>((context.source.magic * damage.percentage) + damage.value);
     case DamageBasis::HEALTH:
-        return static_cast<int>((context.caster.health * damage.percentage) + damage.value);
+        return static_cast<int>((context.source.health * damage.percentage) + damage.value);
     case DamageBasis::DEFENSE:
-        return static_cast<int>((context.caster.defense * damage.percentage) + damage.value);
+        return static_cast<int>((context.source.defense * damage.percentage) + damage.value);
     case DamageBasis::SPEED:
-        return static_cast<int>((context.caster.speed * damage.percentage) + damage.value);
+        return static_cast<int>((context.source.speed * damage.percentage) + damage.value);
     case DamageBasis::ACCURACY:
-        return static_cast<int>((context.caster.accuracy * damage.percentage) + damage.value);
+        return static_cast<int>((context.source.accuracy * damage.percentage) + damage.value);
     case DamageBasis::MANA:
-        return static_cast<int>((context.caster.mana * damage.percentage) + damage.value);
+        return static_cast<int>((context.source.mana * damage.percentage) + damage.value);
     case DamageBasis::STATUS_STRENGTH:
         return static_cast<int>(context.statusStrength * damage.value);
     }
     return 0;
 }
 
-bool evaluate(const Observer& context, const GameCondition& condition)
+bool evaluate(const BattleContext& context, const GameCondition& condition)
 {
     // GameCondition evaluation
     return false;
 }
 
-bool evaluate(const Observer& context, const TargetCondition& condition)
+bool evaluate(const BattleContext& context, const TargetCondition& condition)
 {
     // TargetCondition evaluation
     return false;
@@ -74,7 +74,7 @@ bool checkTargetHasCondition(const TargetCondition& condition, Character* target
     return false;
 }
 
-Return_Flags processTargets(Observer& context, TargetingComponent& targetingComponent)
+Return_Flags processTargets(BattleContext& context, TargetingComponent& targetingComponent)
 {
     // If the observer has current targets, due to spells having two targeting phases for two
     // effects, clear previous targets.
@@ -249,18 +249,18 @@ EffectComponent::DelayedEffect::DelayedEffect(PrimaryEffect&& effect, int delayT
 }
 
 // Component base class implementations
-bool Component::canExecute(const Observer& context) const
+bool Component::canExecute(const BattleContext& context) const
 {
     return shouldExecute(context) && !context.states.game.has(GameCondition::FAILED);
 }
 
-void Component::onExecutionFailed(Observer& context, const std::string& reason)
+void Component::onExecutionFailed(BattleContext& context, const std::string& reason)
 {
     context.states.game.set(GameCondition::FAILED);
     context.failureReason = reason;
 }
 
-bool Component::shouldExecute(const Observer& context) const
+bool Component::shouldExecute(const BattleContext& context) const
 {
     if (gameActivationConditions.empty() && targetActivationConditions.empty())
         return true;
@@ -311,7 +311,7 @@ ComponentCategory TargetingComponent::getCategory() const { return ComponentCate
 
 std::string TargetingComponent::getComponentType() const { return "TargetingComponent"; }
 
-Return_Flags TargetingComponent::execute(Observer& context)
+Return_Flags TargetingComponent::execute(BattleContext& context)
 {
     // Adjusts the numberofTarget variable depending on the target scope chosen
     if (scope == TargetScope::SINGLE)
@@ -344,7 +344,7 @@ ComponentCategory EffectComponent::getCategory() const { return ComponentCategor
 
 std::string EffectComponent::getComponentType() const { return "EffectComponent"; }
 
-Return_Flags EffectComponent::execute(Observer& context)
+Return_Flags EffectComponent::execute(BattleContext& context)
 {
     if (context.currentTargets.empty() && context.scope != TargetScope::NONE)
     {
@@ -374,7 +374,7 @@ Return_Flags EffectComponent::execute(Observer& context)
     return Return_Flags::SUCCESS;
 }
 
-Return_Flags resolvePrimary(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags resolvePrimary(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     // Call function based on their effect type (eg. damage -> applyDamage(), heal -> applyHeal())
     switch (effect.type)
@@ -401,13 +401,13 @@ Return_Flags resolvePrimary(Observer& context, EffectComponent::PrimaryEffect& e
     return Return_Flags::FAILED;
 }
 
-Return_Flags resolveConditional(Observer& context, EffectComponent::ConditionalEffect& effect)
+Return_Flags resolveConditional(BattleContext& context, EffectComponent::ConditionalEffect& effect)
 {
     // For resolving effects with condition or none
     return resolvePrimary(context, effect.primary);
 }
 
-Return_Flags resolveDelayed(Observer& context, EffectComponent::DelayedEffect& effect)
+Return_Flags resolveDelayed(BattleContext& context, EffectComponent::DelayedEffect& effect)
 {
     // For resolving effects with game condition or none
     return Return_Flags::SUCCESS;
@@ -451,7 +451,7 @@ ComponentCategory MessageComponent::getCategory() const { return ComponentCatego
 
 std::string MessageComponent::getComponentType() const { return "MessageComponent"; }
 
-bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasProceeded,
+bool MessageComponent::processMessage(BattleContext& context, std::atomic<bool>& hasProceeded,
                                       std::atomic<bool>& hasReachedEnd)
 {
     // Start a thread to listen for the first skip (typing animation skip)
@@ -621,6 +621,8 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
     }
 
     // Process observer dependent text
+    // Will separate this into a new Generic Messaging Component to easily process battle
+    // after-effects. (i.e damage dealt, effect applied, effect failed)
     std::string generic;
     for (int i = 0; i < context.currentTargets.size(); i++)
     {
@@ -629,7 +631,7 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
             switch (context.effectType)
             {
             case EffectType::DAMAGE:
-                generic = context.caster.name + " have dealt " +
+                generic = context.source.name + " have dealt " +
                           std::to_string(context.damageDealt[i]) + " to " +
                           context.currentTargets[i]->name + " using " + context.name + '\n';
             }
@@ -639,7 +641,7 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
             switch (context.effectType)
             {
             case EffectType::DAMAGE:
-                generic = context.caster.name + " is dealt " +
+                generic = context.source.name + " is dealt " +
                           std::to_string(context.damageDealt[i]) + " damage due to " +
                           context.name + '\n';
             }
@@ -727,11 +729,13 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
             }
 
             // Update dots animation
-            if (++counter % 2 == 0)
+            if (++counter % 2 == 0) // Delay for visual appeal
             {
                 std::cout << '\r' << "Press Enter to continue   " << "\b\b\b";
                 for (int i = 0; i < dotCount; ++i)
+                {
                     std::cout << '.';
+                }
                 std::cout << std::flush;
 
                 dotCount = (dotCount + 1) % (maxDots + 1);
@@ -745,7 +749,7 @@ bool MessageComponent::processMessage(Observer& context, std::atomic<bool>& hasP
     return true;
 }
 
-Return_Flags MessageComponent::execute(Observer& context)
+Return_Flags MessageComponent::execute(BattleContext& context)
 {
     std::atomic<bool> hasSkipped{false};
     std::atomic<bool> hasReachedEnd{false};

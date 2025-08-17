@@ -1,10 +1,10 @@
 
 
 // Handles UI, STATS, AND PERHAPS SOUND
-// GameEventObserver interface
+// GameEventBattleContext interface
 // GameEventSubject base class
 // event structures (SpellCastEvent, etc.)
-// concrete observers (UIObserver, StatsObserver, etc.)
+// concrete observers (UIBattleContext, StatsBattleContext, etc.)
 // event notification system
 // Handles graveyard
 // Handle observers in effects
@@ -27,30 +27,50 @@
 
 using ObservedData = std::tuple<EventCondition, Character*, std::string_view, TargetCondition>;
 
-// Will split this into multiple battle context instead of this one big dump
-class Observer
+struct EventData
+{
+    EventCondition type;             // The event enum
+    std::string name = "";           // The name of the action cast
+    TargetCondition statusCondition; // The status boolean applied
+    TraitCondition traitCondition;   // The trait boolean applied
+    int amount = 0;                  // For damage, heal, or gain/lose X
+    Character* source = nullptr;     // Pointer to the source entity (optional)
+    Character* target = nullptr;     // Pointer to the target entity (optional)
+};
+
+// Will split this into multiple battle context instead of this one big dump, this will be changed
+// into Events. I.E What is the type of the Event?
+class BattleContext
 {
   public:
     ActionType actionType;
     EffectType effectType;
+    // Name of the action
     std::string name;
-    Character& caster;
+    // The character who executes the action
+    Character& source;
     std::vector<std::unique_ptr<Character>>& enemies;
     std::vector<std::unique_ptr<Character>>& allies;
     std::vector<Character*> currentTargets;
-    std::vector<int> damageDealt;
     std::vector<Return_Flags> statusState;
+
+    std::vector<int> damageDealt;
+
     TargetScope scope;
     ConditionContainer states;
+
+    // Detects effect failure
     std::string failureReason;
-    int targetsDefeated = 0;
-    // For Status Effect
+
     int statusStrength;
 
-    Observer(Character& c, Game& game);
+    // Carries the generic effect message to the generic message component
+    std::vector<std::string> genericMessage;
+
+    BattleContext(Character& c, Game& game);
 };
 
-class GlobalEventObserver
+class EventObserver
 {
   private:
     std::queue<ObservedData> events;
@@ -69,12 +89,12 @@ class GlobalEventObserver
     void processCharacterStatuses(Game& game, Character* character, EventCondition triggerEvent);
 
   public:
-    GlobalEventObserver() = default;
+    EventObserver() = default;
     void trigger(Game& game);
     void setQuit();
     void enqueue(const EventCondition& event, Character* c = nullptr, std::string_view str = {},
                  const TargetCondition& condition = TargetCondition::NONE);
-    void waitForEventProcessing(); // New method for main thread to wait
+    void waitForEventProcessing();
 };
 
 #endif

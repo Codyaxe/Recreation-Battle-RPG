@@ -20,7 +20,7 @@ class Game;
 class Trait;
 class Status;
 class TargetingComponent;
-class Observer;
+class BattleContext;
 
 using ExtraAttributes = std::vector<std::string>;
 const int MAX = 2147483647;
@@ -241,21 +241,21 @@ class DynamicValue
     DynamicValue(int fixedValue, DamageBasis damageBasis);
     DynamicValue(int fixedValue, double percentageValue, DamageBasis damageBasis);
 
-    int calculate(Observer& context, DynamicValue& damage);
+    int calculate(BattleContext& context, DynamicValue& damage);
 };
 
-bool evaluate(const Observer& context, const GameCondition& condition);
-bool evaluate(const Observer& context, const TargetCondition& condition);
+bool evaluate(const BattleContext& context, const GameCondition& condition);
+bool evaluate(const BattleContext& context, const TargetCondition& condition);
 bool checkTargetHasCondition(const GameCondition& condition, Character* target);
 bool checkTargetHasCondition(const TargetCondition& condition, Character* target);
-Return_Flags processTargets(Observer& context, TargetingComponent& targetingComponent);
+Return_Flags processTargets(BattleContext& context, TargetingComponent& targetingComponent);
 
 class Component
 {
   public:
     virtual ~Component() = default;
-    virtual Return_Flags execute(Observer& context) = 0;
-    virtual bool shouldExecute(const Observer& context) const;
+    virtual Return_Flags execute(BattleContext& context) = 0;
+    virtual bool shouldExecute(const BattleContext& context) const;
     virtual ComponentCategory getCategory() const = 0;
     virtual std::string getComponentType() const = 0;
 
@@ -266,8 +266,8 @@ class Component
     int executionPriority = 0;
     bool isOptional = false;
 
-    virtual bool canExecute(const Observer& context) const;
-    virtual void onExecutionFailed(Observer& context, const std::string& reason);
+    virtual bool canExecute(const BattleContext& context) const;
+    virtual void onExecutionFailed(BattleContext& context, const std::string& reason);
 };
 
 class TargetingComponent : public Component
@@ -283,7 +283,7 @@ class TargetingComponent : public Component
 
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
-    Return_Flags execute(Observer& context) override;
+    Return_Flags execute(BattleContext& context) override;
 };
 
 class EffectComponent : public Component
@@ -350,17 +350,17 @@ class EffectComponent : public Component
 
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
-    Return_Flags execute(Observer& context) override;
+    Return_Flags execute(BattleContext& context) override;
 };
 
-Return_Flags resolvePrimary(Observer& context, EffectComponent::PrimaryEffect& effect);
-Return_Flags resolveConditional(Observer& context, EffectComponent::ConditionalEffect& effect);
-Return_Flags resolveDelayed(Observer& context, EffectComponent::DelayedEffect& effect);
+Return_Flags resolvePrimary(BattleContext& context, EffectComponent::PrimaryEffect& effect);
+Return_Flags resolveConditional(BattleContext& context, EffectComponent::ConditionalEffect& effect);
+Return_Flags resolveDelayed(BattleContext& context, EffectComponent::DelayedEffect& effect);
 
 class MessageComponent : public Component
 {
   private:
-    bool processMessage(Observer& context, std::atomic<bool>& hasProceeded,
+    bool processMessage(BattleContext& context, std::atomic<bool>& hasProceeded,
                         std::atomic<bool>& hasReachedEnd);
 
   public:
@@ -399,7 +399,7 @@ class MessageComponent : public Component
 
     ComponentCategory getCategory() const override;
     std::string getComponentType() const override;
-    Return_Flags execute(Observer& context) override;
+    Return_Flags execute(BattleContext& context) override;
 };
 
 #endif

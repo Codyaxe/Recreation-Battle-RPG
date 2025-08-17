@@ -9,7 +9,7 @@ Trait::Trait(const std::string& name_, const std::string& description_)
 
 Return_Flags Trait::exhibit(Game& game, Character& player)
 {
-    Observer context(player, game);
+    BattleContext context(player, game);
     context.name = name;
     context.actionType = ActionType::TRAIT;
 

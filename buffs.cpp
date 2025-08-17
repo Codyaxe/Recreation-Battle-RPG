@@ -8,7 +8,7 @@ Buff::Buff(const std::string& name_, const std::string& description_) : Action(n
 
 Return_Flags Buff::buff(Game& game, Character& player)
 {
-    Observer context(player, game);
+    BattleContext context(player, game);
     context.name = name;
     context.actionType = ActionType::BUFF;
 

@@ -15,7 +15,7 @@ void Spell::addComponent(std::unique_ptr<Component> component)
 
 Return_Flags Spell::cast(Game& game, Character& player)
 {
-    Observer context(player, game);
+    BattleContext context(player, game);
     context.name = name;
     context.actionType = ActionType::SPELL;
 

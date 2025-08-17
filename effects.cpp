@@ -4,7 +4,7 @@
 #include "observer.h"
 #include <unordered_map>
 
-Return_Flags applyDamage(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags applyDamage(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     // Element weakness/effectiveness table - maps attacker element to target weaknesses
     // Format: {"AttackType", "EffectiveAgainst1,EffectiveAgainst2,EffectiveAgainst3"}
@@ -84,7 +84,7 @@ Return_Flags applyDamage(Observer& context, EffectComponent::PrimaryEffect& effe
     return Return_Flags::SUCCESS;
 };
 
-Return_Flags applyHeal(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags applyHeal(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     int heal = effect.primaryValue.calculate(context, effect.primaryValue);
     for (auto& target : context.currentTargets)
@@ -102,30 +102,7 @@ Return_Flags applyHeal(Observer& context, EffectComponent::PrimaryEffect& effect
    DynamicValue secondaryValue;
    ExtraAttributes extras; */
 
-Return_Flags applyBuff(Observer& context, EffectComponent::PrimaryEffect& effect)
-{
-    for (auto& target : context.currentTargets)
-    {
-        if (!target->targetConditions.has(effect.genericType))
-        {
-            target->targetConditions.set(effect.genericType);
-            if (effect.statusType)
-            {
-                auto statusClone = effect.statusType->clone();
-                target->statuses.push_back(std::move(statusClone));
-            }
-        }
-        else
-        {
-            std::cout << "Target alrady has the " << effect.statusType.get()->name << " debuff."
-                      << '\n';
-        }
-    }
-    return Return_Flags::SUCCESS;
-};
-
-// DEBUFFS AND BUFF MIGHT HAVE DIFFERENT IMPLEMENTATION FOR NOW IGNORE THIS DUPLICATE CODE
-Return_Flags applyDebuff(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags applyBuff(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     for (auto& target : context.currentTargets)
     {
@@ -147,7 +124,30 @@ Return_Flags applyDebuff(Observer& context, EffectComponent::PrimaryEffect& effe
     return Return_Flags::SUCCESS;
 };
 
-Return_Flags applyExhibit(Observer& context, EffectComponent::PrimaryEffect& effect)
+// DEBUFFS AND BUFF MIGHT HAVE DIFFERENT IMPLEMENTATION FOR NOW IGNORE THIS DUPLICATE CODE
+Return_Flags applyDebuff(BattleContext& context, EffectComponent::PrimaryEffect& effect)
+{
+    for (auto& target : context.currentTargets)
+    {
+        if (!target->targetConditions.has(effect.genericType))
+        {
+            target->targetConditions.set(effect.genericType);
+            if (effect.statusType)
+            {
+                auto statusClone = effect.statusType->clone();
+                target->statuses.push_back(std::move(statusClone));
+            }
+        }
+        else
+        {
+            std::cout << "Target already has the " << effect.statusType.get()->name << " debuff."
+                      << '\n';
+        }
+    }
+    return Return_Flags::SUCCESS;
+};
+
+Return_Flags applyExhibit(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     for (auto& target : context.currentTargets)
     {
@@ -164,7 +164,7 @@ Return_Flags applyExhibit(Observer& context, EffectComponent::PrimaryEffect& eff
     return Return_Flags::SUCCESS;
 };
 // DEBUFFS AND BUFF MIGHT HAVE DIFFERENT IMPLEMENTATION FOR NOW IGNORE THIS DUPLICATE CODE
-Return_Flags removeBuff(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags removeBuff(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     for (auto& target : context.currentTargets)
     {
@@ -178,7 +178,7 @@ Return_Flags removeBuff(Observer& context, EffectComponent::PrimaryEffect& effec
     }
     return Return_Flags::SUCCESS;
 };
-Return_Flags removeDebuff(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags removeDebuff(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     for (auto& target : context.currentTargets)
     {
@@ -192,11 +192,13 @@ Return_Flags removeDebuff(Observer& context, EffectComponent::PrimaryEffect& eff
     }
     return Return_Flags::SUCCESS;
 };
-Return_Flags removeExhibit(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags removeExhibit(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
 
     for (auto& target : context.currentTargets)
     {
+        target->traitConditions.clear(effect.secondGenericType);
+
         auto& acquiredTraits = target->acquiredTraits;
         auto it = std::remove_if(acquiredTraits.begin(), acquiredTraits.end(),
                                  [&effect](const std::unique_ptr<Trait>& trait)
@@ -206,12 +208,12 @@ Return_Flags removeExhibit(Observer& context, EffectComponent::PrimaryEffect& ef
     return Return_Flags::SUCCESS;
 };
 
-Return_Flags applySummon(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags applySummon(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     return Return_Flags::SUCCESS;
 };
 
-Return_Flags applyStats(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags applyStats(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     std::unordered_map<std::string,
                        std::function<void(Character*, EffectComponent::PrimaryEffect&)>>
@@ -301,12 +303,12 @@ Return_Flags applyStats(Observer& context, EffectComponent::PrimaryEffect& effec
     return Return_Flags::SUCCESS;
 };
 
-Return_Flags applyMove(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags applyMove(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     return Return_Flags::SUCCESS;
 };
 
-Return_Flags applyMisc(Observer& context, EffectComponent::PrimaryEffect& effect)
+Return_Flags applyMisc(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
     return Return_Flags::SUCCESS;
 };

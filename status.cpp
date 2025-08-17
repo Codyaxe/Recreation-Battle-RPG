@@ -9,7 +9,7 @@ Status::Status(const std::string& name_, const std::string& description_)
 
 Return_Flags Status::trigger(Game& game, Character* player)
 {
-    Observer context(*player, game); // Grabs strength
+    BattleContext context(*player, game); // Grabs strength
     context.name = name;
     context.actionType = ActionType::STATUS;
     context.statusStrength = strength;
