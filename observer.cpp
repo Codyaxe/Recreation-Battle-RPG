@@ -8,18 +8,15 @@
 #include <chrono>
 
 BattleContext::BattleContext(Character& c, Game& game)
-    : source(c), enemies(game.enemies), allies(game.allies), states()
+    : source(c), enemies(game.enemies), allies(game.allies)
 {
-    states.game = game.gameConditions;
 }
 
-void EventObserver::enqueue(const EventCondition& event, Character* c, std::string_view str,
-                                  const TargetCondition& condition)
+void EventObserver::enqueue(EventData& event)
 {
     {
         std::lock_guard<std::mutex> lock(mutex);
-        ObservedData eventToTrigger = {event, c, str, condition};
-        events.push(eventToTrigger);
+        events.push(event);
     }
 
     // Reset the processed flag before notifying
@@ -88,7 +85,7 @@ void EventObserver::checkAllStatusEffects(Game& game, EventCondition triggerEven
 }
 
 void EventObserver::processCharacterStatuses(Game& game, Character* character,
-                                                   EventCondition triggerEvent)
+                                             EventCondition triggerEvent)
 {
     std::cout << "Processing status effects for character: " << character->name
               << " on event: " << static_cast<int>(triggerEvent) << std::endl;
@@ -225,73 +222,71 @@ void EventObserver::trigger(Game& game)
 
         if (!events.empty())
         {
-            ObservedData data = events.front();
+            EventData& data = events.front();
             events.pop();
             lock.unlock(); // Release lock early
 
-            EventCondition event = std::get<0>(data);
-            Character* target = std::get<1>(data);
-            std::string_view str = std::get<2>(data);
-            TargetCondition condition = std::get<3>(data);
-
-            if (target)
+            if (data.target)
             {
                 // Handle events with string parameter
-                if (!str.empty())
+                if (!data.name.empty())
                 {
-                    auto it = stringEventMap.find(event);
+                    auto it = stringEventMap.find(data.type);
                     if (it != stringEventMap.end())
                     {
-                        it->second(target, game, str);
-                        checkAllStatusEffects(game, event);
+                        it->second(data.target, game, data.name);
+                        checkAllStatusEffects(game, data.type);
                     }
                     else
                     {
-                        std::cerr << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
+                        std::cerr << "ERROR! EVENT NOT FOUND STR: " << static_cast<int>(data.type)
+                                  << '\n';
                     }
                 }
                 // Handle events with condition parameter
-                else if (condition != TargetCondition::NONE)
+                else if (data.statusCondition != TargetCondition::NONE)
                 {
-                    auto it = conditionEventMap.find(event);
+                    auto it = conditionEventMap.find(data.type);
                     if (it != conditionEventMap.end())
                     {
-                        it->second(target, game, condition);
-                        checkAllStatusEffects(game, event);
+                        it->second(data.target, game, data.statusCondition);
+                        checkAllStatusEffects(game, data.type);
                     }
                     else
                     {
-                        std::cerr << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
+                        std::cerr << "ERROR! EVENT NOT FOUND C: " << static_cast<int>(data.type)
+                                  << '\n';
                     }
                 }
                 // Handle simple events character parameters only
                 else
                 {
-                    auto it = simpleEventMap.find(event);
+                    auto it = simpleEventMap.find(data.type);
                     if (it != simpleEventMap.end())
                     {
-                        it->second(target, game);
-                        checkAllStatusEffects(game, event);
+                        it->second(data.target, game);
+                        checkAllStatusEffects(game, data.type);
                     }
                     else
                     {
-                        std::cerr << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
+                        std::cerr << "ERROR! EVENT NOT FOUND S: " << static_cast<int>(data.type)
+                                  << '\n';
                     }
                 }
             }
             else
             {
                 // Handle target events
-                if (!str.empty())
+                if (!data.name.empty())
                 {
-                    auto it = targetEventMap.find(event);
+                    auto it = targetEventMap.find(data.type);
                     if (it != targetEventMap.end())
                     {
                         auto callEvent = [&](Character* target)
                         {
-                            if (target->onEventsAbilities.has(event))
+                            if (target->onEventsAbilities.has(data.type))
                             {
-                                it->second(target, game, str);
+                                it->second(data.target, game, data.name);
                             }
                         };
 
@@ -306,18 +301,19 @@ void EventObserver::trigger(Game& game)
                     }
                     else
                     {
-                        std::cerr << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
+                        std::cerr << "ERROR! EVENT NOT FOUND TAR: " << static_cast<int>(data.type)
+                                  << '\n';
                     }
-                    checkAllStatusEffects(game, event);
+                    checkAllStatusEffects(game, data.type);
                 }
                 else
                 {
-                    auto it = genericEventMap.find(event);
+                    auto it = genericEventMap.find(data.type);
                     if (it != genericEventMap.end())
                     {
                         auto callEvent = [&](Character* target)
                         {
-                            if (target->onEventsAbilities.has(event))
+                            if (target->onEventsAbilities.has(data.type))
                             {
                                 it->second(target, game);
                             }
@@ -334,9 +330,10 @@ void EventObserver::trigger(Game& game)
                     }
                     else
                     {
-                        std::cerr << "ERROR! EVENT NOT FOUND: " << static_cast<int>(event) << '\n';
+                        std::cerr << "ERROR! EVENT NOT FOUND G: " << static_cast<int>(data.type)
+                                  << '\n';
                     }
-                    checkAllStatusEffects(game, event);
+                    checkAllStatusEffects(game, data.type);
                 }
             }
 

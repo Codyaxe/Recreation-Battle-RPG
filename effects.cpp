@@ -1,5 +1,6 @@
 #include "effects.h"
 #include "status.h"
+#include "traits.h"
 #include "character.h"
 #include "observer.h"
 #include <unordered_map>
@@ -70,11 +71,11 @@ Return_Flags applyDamage(BattleContext& context, EffectComponent::PrimaryEffect&
             damage =
                 effect.primaryValue.calculate(context, effect.primaryValue) * 2; // Super effective
         }
-        /*If Critical Hit Do This Implementation*/
+        /*If Critical Hit, Do This Implementation NEEDED*/
         // Stores the damage dealt for UI/Utility/Conditional purposes
         // Add Defense, Speed, Accuracy Checking
-        context.damageDealt.push_back(damage);
-        context.effectType = EffectType::DAMAGE;
+        context.genericMessage.push_back(
+            EffectMessage(EffectType::DAMAGE, context.name, damage, context.source, *target));
         target->health -= damage;
         if (target->health <= 0)
         {
@@ -89,7 +90,11 @@ Return_Flags applyHeal(BattleContext& context, EffectComponent::PrimaryEffect& e
     int heal = effect.primaryValue.calculate(context, effect.primaryValue);
     for (auto& target : context.currentTargets)
     {
+        // Cannot heal exceeding base health
         target->health = (std::min)(heal, target->baseHealth);
+        context.genericMessage.push_back(EffectMessage(EffectType::DAMAGE, context.name,
+                                                       (std::min)(heal, target->baseHealth),
+                                                       context.source, *target));
     }
 
     return Return_Flags::SUCCESS;
@@ -113,12 +118,17 @@ Return_Flags applyBuff(BattleContext& context, EffectComponent::PrimaryEffect& e
             {
                 auto statusClone = effect.statusType->clone();
                 target->statuses.push_back(std::move(statusClone));
+                context.genericMessage.push_back(
+                    EffectMessage(EffectType::BUFF, context.name, context.source, *target));
             }
         }
         else
         {
-            std::cout << "Target already has the " << effect.statusType.get()->name << " debuff."
-                      << '\n';
+            // REAPPLY INSTEAD OF ERROR
+            EffectMessage message =
+                EffectMessage(EffectType::BUFF, context.name, context.source, *target);
+            message.conditions.set(GameCondition::FAILURE_TARGET_ALREADY_HAS_STATUS);
+            context.genericMessage.push_back(message);
         }
     }
     return Return_Flags::SUCCESS;
@@ -136,12 +146,17 @@ Return_Flags applyDebuff(BattleContext& context, EffectComponent::PrimaryEffect&
             {
                 auto statusClone = effect.statusType->clone();
                 target->statuses.push_back(std::move(statusClone));
+                context.genericMessage.push_back(
+                    EffectMessage(EffectType::DEBUFF, context.name, context.source, *target));
             }
         }
         else
         {
-            std::cout << "Target already has the " << effect.statusType.get()->name << " debuff."
-                      << '\n';
+            // REAPPLY INSTEAD OF ERROR
+            EffectMessage message =
+                EffectMessage(EffectType::DEBUFF, context.name, context.source, *target);
+            message.conditions.set(GameCondition::FAILURE_TARGET_ALREADY_HAS_STATUS);
+            context.genericMessage.push_back(message);
         }
     }
     return Return_Flags::SUCCESS;
@@ -158,7 +173,16 @@ Return_Flags applyExhibit(BattleContext& context, EffectComponent::PrimaryEffect
             {
                 auto traitClone = effect.traitType->clone();
                 target->acquiredTraits.push_back(std::move(traitClone));
+                context.genericMessage.push_back(
+                    EffectMessage(EffectType::EXHIBIT, context.name, context.source, *target));
             }
+        }
+        else
+        {
+            EffectMessage message =
+                EffectMessage(EffectType::BUFF, context.name, context.source, *target);
+            message.conditions.set(GameCondition::FAILURE_TRAITS_CANNOT_STACK);
+            context.genericMessage.push_back(message);
         }
     }
     return Return_Flags::SUCCESS;
@@ -256,8 +280,10 @@ Return_Flags applyStats(BattleContext& context, EffectComponent::PrimaryEffect& 
                  }
                  else
                  {
-                     context.states.game.set(GameCondition::FAILED);
-                     context.failureReason = "Target has no Barrier Attribute.";
+                     EffectMessage message =
+                         EffectMessage(EffectType::STATS, context.name, context.source, *c);
+                     message.conditions.set(GameCondition::FAILED);
+                     context.genericMessage.push_back(message);
                  }
              }},
             {"Shield",
@@ -270,8 +296,10 @@ Return_Flags applyStats(BattleContext& context, EffectComponent::PrimaryEffect& 
                  }
                  else
                  {
-                     context.states.game.set(GameCondition::FAILED);
-                     context.failureReason = "Target has no Shield Attribute.";
+                     EffectMessage message =
+                         EffectMessage(EffectType::STATS, context.name, context.source, *c);
+                     message.conditions.set(GameCondition::FAILED);
+                     context.genericMessage.push_back(message);
                  }
              }},
             {"Armor",
@@ -284,8 +312,10 @@ Return_Flags applyStats(BattleContext& context, EffectComponent::PrimaryEffect& 
                  }
                  else
                  {
-                     context.states.game.set(GameCondition::FAILED);
-                     context.failureReason = "Target has no Armor Attribute.";
+                     EffectMessage message =
+                         EffectMessage(EffectType::STATS, context.name, context.source, *c);
+                     message.conditions.set(GameCondition::FAILED);
+                     context.genericMessage.push_back(message);
                  }
              }},
         };

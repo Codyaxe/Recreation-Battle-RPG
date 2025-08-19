@@ -29,13 +29,14 @@ Return_Flags Debuff::afflict(Game& game, Character& player)
             {
                 return Return_Flags::EXIT;
             }
-
-            if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
-            {
-                std::cout << "Suddenly, your magic of curses works in tandem with real life: "
-                          << context.failureReason << std::endl;
-                break;
-            }
+        }
+        else
+        {
+            EffectMessage message = EffectMessage();
+            message.conditions.set(GameCondition::FAILURE_DEBUFF_ACTIVATION);
+            std::cerr << "Suddenly, your magic of curses works in tandem with real life: ";
+            context.genericMessage.push_back(message);
+            break;
         }
     }
     return Return_Flags::SUCCESS;

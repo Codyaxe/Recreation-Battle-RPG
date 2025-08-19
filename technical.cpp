@@ -236,7 +236,7 @@ Return_Flags menu(Game& game, Player& player)
                 case VK_ESCAPE:
                     clearScreen();
                     std::cout << "Action selection exited.\n";
-                    Sleep(1000);
+                    Sleep(500);
                     return Return_Flags::EXIT;
 
                 case VK_UP:
@@ -275,7 +275,7 @@ Return_Flags menu(Game& game, Player& player)
                     default:
                         break;
                     }
-                    Sleep(1000);
+                    Sleep(500);
                     displayMenu(count, player); // Redisplay menu after action
                     break;
                 }
@@ -382,7 +382,7 @@ Action* menuChooseHelper(std::vector<std::unique_ptr<Action>>& inv, const Action
                 case VK_RETURN:
                     clearScreen();
                     std::cout << "Choosing: " << inv[count]->name << "\n";
-                    Sleep(1000);
+                    Sleep(500);
                     return inv[count].get();
                     break;
 
@@ -467,7 +467,7 @@ Return_Flags selectPlayer(std::vector<Player*>& allies, int& selectedIndex)
                     clearScreen();
                     std::cout << "You've quited the game" << '\n';
                     // Keyboard Listening if Player wants to exit, cancel, or just end the turn
-                    Sleep(1000);
+                    Sleep(500);
                     return Return_Flags::QUIT;
 
                 case VK_UP:
@@ -483,7 +483,7 @@ Return_Flags selectPlayer(std::vector<Player*>& allies, int& selectedIndex)
                 case VK_RETURN:
                     clearScreen();
                     std::cout << "Selecting: " << allies[count]->name << "\n";
-                    Sleep(1000);
+                    Sleep(500);
                     selectedIndex = count;
                     return Return_Flags::SUCCESS;
 
@@ -718,7 +718,9 @@ void Interface::start()
         Return_Flags resultGame = menuPlayer(game);
         if (resultGame == Return_Flags::END_BATTLE)
         {
-            eventBattleContext.enqueue(EventCondition::ON_END_TURN);
+            EventData event;
+            event.type = EventCondition::ON_END_TURN;
+            eventBattleContext.enqueue(event);
             eventBattleContext.waitForEventProcessing();
         }
         if (resultGame == Return_Flags::QUIT)

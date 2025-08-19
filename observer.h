@@ -29,43 +29,61 @@ using ObservedData = std::tuple<EventCondition, Character*, std::string_view, Ta
 
 struct EventData
 {
-    EventCondition type;             // The event enum
-    std::string name = "";           // The name of the action cast
-    TargetCondition statusCondition; // The status boolean applied
-    TraitCondition traitCondition;   // The trait boolean applied
-    int amount = 0;                  // For damage, heal, or gain/lose X
-    Character* source = nullptr;     // Pointer to the source entity (optional)
-    Character* target = nullptr;     // Pointer to the target entity (optional)
+    EventCondition type;                                     // The event enum
+    std::string name = "";                                   // The name of the action cast
+    TargetCondition statusCondition = TargetCondition::NONE; // The status boolean applied
+    TraitCondition traitCondition = TraitCondition::NONE;    // The trait boolean applied
+    int amount = 0;                                          // For damage, heal, or gain/lose X
+    Character* source = nullptr;                             // Viewing pointer to the source entity
+    Character* target = nullptr;                             // Viewing pointer to the target entity
 };
 
-// Will split this into multiple battle context instead of this one big dump, this will be changed
-// into Events. I.E What is the type of the Event?
+struct EffectMessage
+{
+    EffectType type;
+    std::string_view name;
+    int amount = 0;
+    BitsetWrapper<GameCondition> conditions;
+    Character* source = nullptr;
+    Character* target = nullptr;
+
+    EffectMessage() = default;
+
+    EffectMessage(EffectType tp, const std::string& n, Character& s, Character& t)
+        : type(tp), name(n), source(&s), target(&t)
+    {
+    }
+    EffectMessage(EffectType tp, const std::string& n, int number, Character& s, Character& t)
+        : type(tp), name(n), amount(number), source(&s), target(&t)
+    {
+    }
+};
+
+// The BattleContext class will carry important information from another component to another
 class BattleContext
 {
   public:
     ActionType actionType;
-    EffectType effectType;
     // Name of the action
     std::string name;
     // The character who executes the action
     Character& source;
+    TargetScope scope;
+    // Gathers all available targets from game class
     std::vector<std::unique_ptr<Character>>& enemies;
     std::vector<std::unique_ptr<Character>>& allies;
     std::vector<Character*> currentTargets;
-    std::vector<Return_Flags> statusState;
-
-    std::vector<int> damageDealt;
-
-    TargetScope scope;
-    ConditionContainer states;
+    std::vector<int> damageDealt; // Will be removed, legacy member
 
     // Detects effect failure
-    std::string failureReason;
+    std::vector<Return_Flags> statusState;
 
+    // For status effects
     int statusStrength;
 
     // Carries the generic effect message to the generic message component
-    std::vector<std::string> genericMessage;
+    // Outputs "Target x applied y to target z"
+    std::vector<EffectMessage> genericMessage;
 
     BattleContext(Character& c, Game& game);
 };
@@ -73,7 +91,7 @@ class BattleContext
 class EventObserver
 {
   private:
-    std::queue<ObservedData> events;
+    std::queue<EventData> events;
     std::mutex mutex;
     std::condition_variable cv;
     bool gameQuit = false;
@@ -92,8 +110,7 @@ class EventObserver
     EventObserver() = default;
     void trigger(Game& game);
     void setQuit();
-    void enqueue(const EventCondition& event, Character* c = nullptr, std::string_view str = {},
-                 const TargetCondition& condition = TargetCondition::NONE);
+    void enqueue(EventData& event);
     void waitForEventProcessing();
 };
 

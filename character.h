@@ -63,6 +63,7 @@ class Character
     // For Filtering if a Character has an On X Ablity
     BitsetWrapper<EventCondition> onEventsAbilities;
 
+    Character() = default;
     Character(std::string name_, std::string element_, int health_, int defense_, int power_,
               int magic_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_,
               int luck_);

@@ -28,13 +28,14 @@ Return_Flags Buff::buff(Game& game, Character& player)
             {
                 return Return_Flags::EXIT;
             }
-
-            if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
-            {
-                std::cout << "Unfortunately, it was a placebo all along: " << context.failureReason
-                          << std::endl;
-                break;
-            }
+        }
+        else
+        {
+            EffectMessage message = EffectMessage();
+            message.conditions.set(GameCondition::FAILURE_BUFF_ACTIVATION);
+            std::cerr << "Unfortunately, it was a placebo all along: ";
+            context.genericMessage.push_back(message);
+            break;
         }
     }
     return Return_Flags::SUCCESS;

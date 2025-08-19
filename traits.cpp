@@ -29,13 +29,14 @@ Return_Flags Trait::exhibit(Game& game, Character& player)
             {
                 return Return_Flags::EXIT;
             }
-
-            if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
-            {
-                std::cout << "In a swirl of madness, you actually did nothing: "
-                          << context.failureReason << std::endl;
-                break;
-            }
+        }
+        else
+        {
+            EffectMessage message = EffectMessage();
+            message.conditions.set(GameCondition::FAILURE_TRAIT_ACTIVATION);
+            context.genericMessage.push_back(message);
+            std::cerr << "In a swirl of madness, you actually did nothing: ";
+            break;
         }
     }
     return Return_Flags::SUCCESS;

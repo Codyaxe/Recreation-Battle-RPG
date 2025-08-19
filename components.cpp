@@ -249,15 +249,11 @@ EffectComponent::DelayedEffect::DelayedEffect(PrimaryEffect&& effect, int delayT
 }
 
 // Component base class implementations
-bool Component::canExecute(const BattleContext& context) const
-{
-    return shouldExecute(context) && !context.states.game.has(GameCondition::FAILED);
-}
+bool Component::canExecute(const BattleContext& context) const { return shouldExecute(context); }
 
 void Component::onExecutionFailed(BattleContext& context, const std::string& reason)
 {
-    context.states.game.set(GameCondition::FAILED);
-    context.failureReason = reason;
+    //
 }
 
 bool Component::shouldExecute(const BattleContext& context) const
@@ -620,30 +616,55 @@ bool MessageComponent::processMessage(BattleContext& context, std::atomic<bool>&
         }
     }
 
-    // Process observer dependent text
+    // Process context dependent text
     // Will separate this into a new Generic Messaging Component to easily process battle
     // after-effects. (i.e damage dealt, effect applied, effect failed)
     std::string generic;
-    for (int i = 0; i < context.currentTargets.size(); i++)
+    for (auto& message : context.genericMessage)
     {
-        if (context.actionType != ActionType::STATUS)
+        if (!primaryTexts[0].isStatus) // Subject to change to be more readable
         {
-            switch (context.effectType)
+            switch (message.type)
             {
             case EffectType::DAMAGE:
-                generic = context.source.name + " have dealt " +
-                          std::to_string(context.damageDealt[i]) + " to " +
-                          context.currentTargets[i]->name + " using " + context.name + '\n';
+                generic = message.source->name + " have dealt " + std::to_string(message.amount) +
+                          " to " + message.target->name + " using " +
+                          static_cast<std::string>(message.name) + '\n';
+                break;
+            case EffectType::HEAL:
+                generic = message.source->name + " healed " + message.target->name + " by " +
+                          std::to_string(message.amount) + " using " +
+                          static_cast<std::string>(message.name) + '\n';
+                break;
+            case EffectType::BUFF:
+                generic = message.source->name + " have applied the buff " +
+                          static_cast<std::string>(message.name) + " to target " +
+                          message.target->name + '\n';
+                break;
+            case EffectType::DEBUFF:
+                generic = message.source->name + " have applied the debuff " +
+                          static_cast<std::string>(message.name) + " to target " +
+                          message.target->name + '\n';
+                break;
+            case EffectType::EXHIBIT:
+                generic = message.source->name + " have applied the trait " +
+                          static_cast<std::string>(message.name) + " to target " +
+                          message.target->name + '\n';
+                break;
+            case EffectType::SUMMON:
+                generic = message.source->name + " have summoned " +
+                          static_cast<std::string>(message.name) + '\n';
+                break;
             }
         }
         else
         {
-            switch (context.effectType)
+            switch (message.type)
             {
             case EffectType::DAMAGE:
-                generic = context.source.name + " is dealt " +
-                          std::to_string(context.damageDealt[i]) + " damage due to " +
-                          context.name + '\n';
+                generic = message.source->name + " is dealt " + std::to_string(message.amount) +
+                          " damage due to " + static_cast<std::string>(message.name) + '\n';
+                break;
             }
         }
         storeSkippedString += generic + '\n';
@@ -679,6 +700,7 @@ bool MessageComponent::processMessage(BattleContext& context, std::atomic<bool>&
                     std::cout << '\n';
                 }
             }
+            // If the typing mode is not turned on, output the generic message immediately
             else
             {
                 std::cout << generic << '\n';
@@ -686,6 +708,30 @@ bool MessageComponent::processMessage(BattleContext& context, std::atomic<bool>&
         }
     }
 
+    // for (int i = 0; i < context.currentTargets.size(); i++)
+    // {
+    //     if (context.actionType != ActionType::STATUS)
+    //     {
+    //         switch (context.effectType)
+    //         {
+    //         case EffectType::DAMAGE:
+    //             generic = context.source.name + " have dealt " +
+    //                       std::to_string(context.damageDealt[i]) + " to " +
+    //                       context.currentTargets[i]->name + " using " + context.name + '\n';
+    //         }
+    //     }
+    //     else
+    //     {
+    //         switch (context.effectType)
+    //         {
+    //         case EffectType::DAMAGE:
+    //             generic = context.source.name + " is dealt " +
+    //                       std::to_string(context.damageDealt[i]) + " damage due to " +
+    //                       context.name + '\n';
+    //         }
+    //     }
+
+    // If user have skipped, clear the screen and output all strings
     if (hasProceeded.load())
     {
         clearScreen();

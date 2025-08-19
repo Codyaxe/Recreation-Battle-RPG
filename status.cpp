@@ -1,5 +1,6 @@
 #include "status.h"
 #include "effects.h"
+#include "character.h"
 #include "observer.h"
 
 Status::Status(const std::string& name_, const std::string& description_)
@@ -32,13 +33,14 @@ Return_Flags Status::trigger(Game& game, Character* player)
             {
                 return Return_Flags::EXIT;
             }
-
-            if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
-            {
-                std::cout << "The status effect failed!! WHY??? " << context.failureReason
-                          << std::endl;
-                break;
-            }
+        }
+        else
+        {
+            EffectMessage message = EffectMessage();
+            message.conditions.set(GameCondition::FAILURE_STATUS_ACTIVATION);
+            context.genericMessage.push_back(message);
+            std::cerr << "The status effect failed!! WHY??? ";
+            break;
         }
     }
     return Return_Flags::SUCCESS;
@@ -57,7 +59,7 @@ void Status::addComponent(std::unique_ptr<Component> component)
 
 namespace PoisonText
 {
-static const char* const TEXTS[] = {"You took poison damage!"};
+static const char* const TEXTS[] = {"Took poison damage!"};
 static constexpr size_t TEXT_COUNT = sizeof(TEXTS) / sizeof(TEXTS[0]);
 } // namespace PoisonText
 
@@ -84,36 +86,15 @@ Poison::Poison() : Status("Poison Status Effect", "A debilitating tick damage")
     ui->primaryTexts.reserve(PoisonText::TEXT_COUNT); // Pre-allocate for efficiency
     for (size_t i = 0; i < PoisonText::TEXT_COUNT; ++i)
     {
-        ui->primaryTexts.push_back(MessageComponent::PrimaryText(PoisonText::TEXTS[i], true, 50));
+        ui->primaryTexts.push_back(
+            MessageComponent::PrimaryText(PoisonText::TEXTS[i], false, true, 50));
     }
     ui->executionPriority = 2;
     addComponent(std::move(ui));
 }
 
-Poison::Poison(int dur, int str) : Status("Poison Status Effect", "A debilitating tick damage")
+Poison::Poison(int dur, int str) : Poison()
 {
-    condition = TargetCondition::POISON;
     duration = dur;
     strength = str;
-    // The condition to activate the status effect
-    activationConditions.push_back(EventCondition::ON_END_TURN);
-
-    //  Effect component
-    auto effect = std::make_unique<EffectComponent>();
-    auto primaryFX = EffectComponent::PrimaryEffect(EffectType::DAMAGE, "Poison",
-                                                    DynamicValue(20, DamageBasis::STATUS_STRENGTH));
-    effect->primaryEffects.push_back(std::move(primaryFX));
-    effect->executionPriority = 1;
-    addComponent(std::move(effect));
-
-    // UI component
-    auto ui = std::make_unique<MessageComponent>();
-    ui->primaryTexts.reserve(PoisonText::TEXT_COUNT); // Pre-allocate for efficiency
-    for (size_t i = 0; i < PoisonText::TEXT_COUNT; ++i)
-    {
-        ui->primaryTexts.push_back(
-            MessageComponent::PrimaryText(PoisonText::TEXTS[i], true, true, 50));
-    }
-    ui->executionPriority = 2;
-    addComponent(std::move(ui));
 }

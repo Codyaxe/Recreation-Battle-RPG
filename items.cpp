@@ -28,13 +28,14 @@ Return_Flags Item::use(Game& game, Character& player)
             {
                 return Return_Flags::EXIT;
             }
-
-            if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
-            {
-                std::cout << "Despite all the reasons you're here, your item consumed itself: "
-                          << context.failureReason << std::endl;
-                break;
-            }
+        }
+        else
+        {
+            EffectMessage message = EffectMessage();
+            message.conditions.set(GameCondition::FAILURE_ITEM_ACTIVATION);
+            context.genericMessage.push_back(message);
+            std::cerr << "Despite all the reasons you're here, your item consumed itself: ";
+            break;
         }
     }
     return Return_Flags::SUCCESS;

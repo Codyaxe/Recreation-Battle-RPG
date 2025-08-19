@@ -29,13 +29,14 @@ Return_Flags Summon::call(Game& game, Character& player)
             {
                 return Return_Flags::EXIT;
             }
-
-            if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
-            {
-                std::cout << "Your summon decides it's wise to nope out of the situation: "
-                          << context.failureReason << std::endl;
-                break;
-            }
+        }
+        else
+        {
+            EffectMessage message = EffectMessage();
+            message.conditions.set(GameCondition::FAILURE_SUMMON_ACTIVATION);
+            context.genericMessage.push_back(message);
+            std::cerr << "Your summon decides it's wise to nope out of the situation: ";
+            break;
         }
     }
     return Return_Flags::SUCCESS;

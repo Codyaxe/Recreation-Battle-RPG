@@ -35,13 +35,14 @@ Return_Flags Spell::cast(Game& game, Character& player)
             {
                 return Return_Flags::EXIT;
             }
-
-            if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
-            {
-                std::cout << "As you chanted the spell, you suddenly forgot how to speak: "
-                          << context.failureReason << std::endl;
-                break;
-            }
+        }
+        else
+        {
+            EffectMessage message = EffectMessage();
+            message.conditions.set(GameCondition::FAILURE_SPELL_ACTIVATION);
+            context.genericMessage.push_back(message);
+            std::cout << "As you chanted the spell, you suddenly forgot how to speak: ";
+            break;
         }
     }
     return Return_Flags::SUCCESS;

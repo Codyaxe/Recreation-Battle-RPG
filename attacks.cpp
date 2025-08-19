@@ -29,14 +29,15 @@ Return_Flags Attack::initiate(Game& game, Character& player)
             {
                 return Return_Flags::EXIT;
             }
-
-            if (context.states.game.has(GameCondition::FAILED) && !component->isOptional)
-            {
-                std::cout << "As you make your way to your enemy, you forged a dream towards "
-                             "nonexistence: "
-                          << context.failureReason << std::endl;
-                break;
-            }
+        }
+        else
+        {
+            EffectMessage message = EffectMessage();
+            message.conditions.set(GameCondition::FAILURE_ATTACK_ACTIVATION);
+            context.genericMessage.push_back(message);
+            std::cout << "As you make your way to your enemy, you forged a dream towards "
+                      << "nonexistence.";
+            break;
         }
     }
     return Return_Flags::SUCCESS;
