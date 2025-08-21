@@ -1,0 +1,3 @@
+C:/Code/Projects/Battle RPG/cmake-build-debug/CMakeFiles/Battle_RPG.dir
+C:/Code/Projects/Battle RPG/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Code/Projects/Battle RPG/cmake-build-debug/CMakeFiles/rebuild_cache.dir
