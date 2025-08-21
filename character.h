@@ -93,7 +93,7 @@ class Character
     virtual void onCall(Game& game, std::string_view str) {}
     // On event when an item is utilized;
     virtual void onUse(Game& game, std::string_view str) {}
-    // On event when an equipment is utilized;
+    // On event when equipment is utilized;
     virtual void onChange(Game& game, std::string_view str) {}
     // On event when a card is played (for Cardmasters);
     virtual void onPlay(Game& game, std::string_view str) {}
@@ -137,7 +137,7 @@ class Player : public Character
     int armor;
 
     Player();
-    Player(std::string name_);
+    explicit Player(std::string name_);
 
     Player(std::string name_, std::string element_, int health_, int defense_, int power_,
            int magic_, int speed_, int accuracy_, int mana_, int resistance_, int weakness_,
@@ -158,7 +158,7 @@ class Enemy : public Character
 
   public:
     Enemy();
-    Enemy(std::string name_);
+    explicit Enemy(std::string name_);
 
     std::vector<Character::MenuAction> getMenuActions() override;
     Action_Result attack(Game& game) override;
