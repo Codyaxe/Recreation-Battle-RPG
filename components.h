@@ -130,6 +130,9 @@ enum class GameCondition : size_t
     FAILURE_STATUS_ACTIVATION,
     FAILURE_SUMMON_ACTIVATION,
     FAILURE_TRAIT_ACTIVATION,
+    FAILURE_DEBUFF_EFFECT_DNE,
+    FAILURE_BUFF_EFFECT_DNE,
+    FAILURE_TRAIT_EFFECT_DNE,
     COUNT
 };
 
@@ -151,43 +154,43 @@ enum class TraitCondition : size_t
 
 enum class EventCondition
 {
-    ON_DEATH,
+    ON_DEATH, // Done
     ON_SUMMON,
-    ON_INITIATE,
-    ON_CAST,
-    ON_AFFLICT,
-    ON_BUFF,
-    ON_EXHIBIT,
-    ON_CALL,
-    ON_USE,
-    ON_CHANGE,
-    ON_PLAY,
-    ON_TARGET_INITIATE,
-    ON_TARGET_CAST,
-    ON_TARGET_AFFLICT,
-    ON_TARGET_BUFF,
-    ON_TARGET_EXHIBIT,
-    ON_TARGET_CALL,
-    ON_TARGET_USE,
-    ON_TARGET_CHANGE,
-    ON_TARGET_PLAY,
-    ON_DAMAGE_TAKEN,
-    ON_DEALING_DAMAGE, //
-    ON_HEAL,
-    ON_GAIN_X,
-    ON_LOSE_X,
+    ON_INITIATE,        // Done
+    ON_CAST,            // Done
+    ON_AFFLICT,         // Done
+    ON_BUFF,            // Done
+    ON_EXHIBIT,         // Done
+    ON_CALL,            // Done
+    ON_USE,             // Done
+    ON_CHANGE,          // TBA
+    ON_PLAY,            // TBA
+    ON_TARGET_INITIATE, // Done
+    ON_TARGET_CAST,     // Done
+    ON_TARGET_AFFLICT,  // Done
+    ON_TARGET_BUFF,     // Done
+    ON_TARGET_EXHIBIT,  // Done
+    ON_TARGET_CALL,     // Done
+    ON_TARGET_USE,      // Done
+    ON_TARGET_CHANGE,   // TBA
+    ON_TARGET_PLAY,     // TBA
+    ON_DAMAGE_TAKEN,    // Done
+    ON_DEALING_DAMAGE,  // Done
+    ON_HEAL,            // Done
+    ON_GAIN_X,          // Done
+    ON_LOSE_X,          // Done
     ON_START_TURN,
-    ON_END_TURN,
+    ON_END_TURN, // Placeholder
     ON_CRIT,
     ON_BLOCK,
     ON_PARRY,
     ON_COUNTER,
     ON_DODGE,
     ON_MISS,
-    ON_KILL,
-    ON_FATAL_DAMAGE,
-    ON_STATUS_TICK,
-    ON_STATUS_EXPIRE,
+    ON_KILL,          // Done
+    ON_FATAL_DAMAGE,  // Done
+    ON_STATUS_TICK,   // Done
+    ON_STATUS_EXPIRE, // Done
     COUNT
 };
 

@@ -2,6 +2,7 @@
 #define ACTION_H
 #include "components.h"
 #include "return_flags.h"
+#include "technical.h"
 #include <string>
 #include <vector>
 #include <memory>

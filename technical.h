@@ -2,6 +2,7 @@
 #define TECHNICAL_H
 
 #include "components.h"
+#include "observer.h"
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -72,18 +73,18 @@ Return_Flags chooseTarget(BattleContext& context, TargetingComponent& targetingC
 
 class Interface
 {
-
   public:
     static HANDLE hOut;
     static HANDLE hIn;
+    static EventObserver eventBattleContext;
     DWORD originalOutMode, originalInMode;
+
     bool enableFlags();
     void restoreConsoleMode();
 
-  public:
     Interface();
     ~Interface();
-    void start();
+    static void start();
 };
 
 #endif

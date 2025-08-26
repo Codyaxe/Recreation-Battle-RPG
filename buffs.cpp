@@ -17,6 +17,16 @@ Return_Flags Buff::buff(Game& game, Character& player)
               [](const std::unique_ptr<Component>& a, const std::unique_ptr<Component>& b)
               { return a->executionPriority < b->executionPriority; });
 
+    // Trigger On_Buff Ability
+    EventData event(EventCondition::ON_BUFF, name, &player);
+    Interface::eventBattleContext.enqueue(event);
+
+    // Trigger On_Target_Buff Ability
+    EventData target_event(EventCondition::ON_TARGET_BUFF, name);
+    Interface::eventBattleContext.enqueue(target_event);
+
+    Interface::eventBattleContext.waitForEventProcessing();
+
     // Execute components in order
     for (auto& component : components)
     {

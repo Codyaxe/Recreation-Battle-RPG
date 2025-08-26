@@ -14,6 +14,7 @@
 
 HANDLE Interface::hOut;
 HANDLE Interface::hIn;
+EventObserver Interface::eventBattleContext;
 
 void clearScreen()
 {
@@ -710,7 +711,6 @@ void Interface::start()
 
     SetConsoleTitleW(L"Battle RPG");
     Game game;
-    static EventObserver eventBattleContext;
     std::thread listener(&EventObserver::trigger, &eventBattleContext, std::ref(game));
 
     while (true)
@@ -718,8 +718,7 @@ void Interface::start()
         Return_Flags resultGame = menuPlayer(game);
         if (resultGame == Return_Flags::END_BATTLE)
         {
-            EventData event;
-            event.type = EventCondition::ON_END_TURN;
+            EventData event(EventCondition::ON_END_TURN);
             eventBattleContext.enqueue(event);
             eventBattleContext.waitForEventProcessing();
         }

@@ -18,6 +18,15 @@ Return_Flags Trait::exhibit(Game& game, Character& player)
               [](const std::unique_ptr<Component>& a, const std::unique_ptr<Component>& b)
               { return a->executionPriority < b->executionPriority; });
 
+    // Trigger On_Exhibit Ability
+    EventData event(EventCondition::ON_EXHIBIT, name, &player);
+    Interface::eventBattleContext.enqueue(event);
+
+    // Trigger On_Target_Exhibit Ability
+    EventData target_event(EventCondition::ON_TARGET_EXHIBIT, name);
+    Interface::eventBattleContext.enqueue(target_event);
+    Interface::eventBattleContext.waitForEventProcessing();
+
     // Execute components in order
     for (auto& component : components)
     {

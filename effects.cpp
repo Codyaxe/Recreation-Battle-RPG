@@ -3,6 +3,7 @@
 #include "traits.h"
 #include "character.h"
 #include "observer.h"
+#include "technical.h"
 #include <unordered_map>
 
 Return_Flags applyDamage(BattleContext& context, EffectComponent::PrimaryEffect& effect)
@@ -75,11 +76,24 @@ Return_Flags applyDamage(BattleContext& context, EffectComponent::PrimaryEffect&
         // Stores the damage dealt for UI/Utility/Conditional purposes
         // Add Defense, Speed, Accuracy Checking
         context.genericMessage.push_back(
-            EffectMessage(EffectType::DAMAGE, context.name, damage, context.source, *target));
+            EffectMessage(EffectType::DAMAGE, context.name, damage, &context.source, target));
         target->health -= damage;
+
+        EventData eventDealingDamage(EventCondition::ON_DEALING_DAMAGE, &context.source, damage);
+        Interface::eventBattleContext.enqueue(eventDealingDamage);
+        EventData eventDamageTaken(EventCondition::ON_DAMAGE_TAKEN, target, damage);
+        Interface::eventBattleContext.enqueue(eventDamageTaken);
+
         if (target->health <= 0)
         {
             target->targetConditions.set(TargetCondition::DEAD);
+            EventData eventDeath(EventCondition::ON_DEATH, target);
+            Interface::eventBattleContext.enqueue(eventDeath);
+            EventData eventFatal(EventCondition::ON_FATAL_DAMAGE, target);
+            Interface::eventBattleContext.enqueue(eventFatal);
+            EventData eventKill(EventCondition::ON_KILL, &context.source);
+            Interface::eventBattleContext.enqueue(eventKill);
+            Interface::eventBattleContext.waitForEventProcessing();
         }
     }
     return Return_Flags::SUCCESS;
@@ -92,9 +106,12 @@ Return_Flags applyHeal(BattleContext& context, EffectComponent::PrimaryEffect& e
     {
         // Cannot heal exceeding base health
         target->health = (std::min)(heal, target->baseHealth);
+        EventData eventHeal(EventCondition::ON_HEAL, target, heal);
+        Interface::eventBattleContext.enqueue(eventHeal);
+        Interface::eventBattleContext.waitForEventProcessing();
         context.genericMessage.push_back(EffectMessage(EffectType::DAMAGE, context.name,
                                                        (std::min)(heal, target->baseHealth),
-                                                       context.source, *target));
+                                                       &context.source, target));
     }
 
     return Return_Flags::SUCCESS;
@@ -117,16 +134,28 @@ Return_Flags applyBuff(BattleContext& context, EffectComponent::PrimaryEffect& e
             if (effect.statusType)
             {
                 auto statusClone = effect.statusType->clone();
+                EventData eventBuff(EventCondition::ON_GAIN_X, effect.genericType, target);
+
+                Interface::eventBattleContext.enqueue(eventBuff);
+                Interface::eventBattleContext.waitForEventProcessing();
                 target->statuses.push_back(std::move(statusClone));
+
                 context.genericMessage.push_back(
-                    EffectMessage(EffectType::BUFF, context.name, context.source, *target));
+                    EffectMessage(EffectType::BUFF, context.name, &context.source, target));
+            }
+            else
+            {
+                EffectMessage message =
+                    EffectMessage(EffectType::BUFF, context.name, &context.source, target);
+                message.conditions.set(GameCondition::FAILURE_DEBUFF_EFFECT_DNE);
+                context.genericMessage.push_back(message);
             }
         }
         else
         {
             // REAPPLY INSTEAD OF ERROR
             EffectMessage message =
-                EffectMessage(EffectType::BUFF, context.name, context.source, *target);
+                EffectMessage(EffectType::BUFF, context.name, &context.source, target);
             message.conditions.set(GameCondition::FAILURE_TARGET_ALREADY_HAS_STATUS);
             context.genericMessage.push_back(message);
         }
@@ -146,15 +175,27 @@ Return_Flags applyDebuff(BattleContext& context, EffectComponent::PrimaryEffect&
             {
                 auto statusClone = effect.statusType->clone();
                 target->statuses.push_back(std::move(statusClone));
+
+                EventData eventDebuff(EventCondition::ON_GAIN_X, effect.genericType, target);
+                Interface::eventBattleContext.enqueue(eventDebuff);
+                Interface::eventBattleContext.waitForEventProcessing();
+
                 context.genericMessage.push_back(
-                    EffectMessage(EffectType::DEBUFF, context.name, context.source, *target));
+                    EffectMessage(EffectType::DEBUFF, context.name, &context.source, target));
+            }
+            else
+            {
+                EffectMessage message =
+                    EffectMessage(EffectType::DEBUFF, context.name, &context.source, target);
+                message.conditions.set(GameCondition::FAILURE_BUFF_EFFECT_DNE);
+                context.genericMessage.push_back(message);
             }
         }
         else
         {
             // REAPPLY INSTEAD OF ERROR
             EffectMessage message =
-                EffectMessage(EffectType::DEBUFF, context.name, context.source, *target);
+                EffectMessage(EffectType::DEBUFF, context.name, &context.source, target);
             message.conditions.set(GameCondition::FAILURE_TARGET_ALREADY_HAS_STATUS);
             context.genericMessage.push_back(message);
         }
@@ -173,14 +214,19 @@ Return_Flags applyExhibit(BattleContext& context, EffectComponent::PrimaryEffect
             {
                 auto traitClone = effect.traitType->clone();
                 target->acquiredTraits.push_back(std::move(traitClone));
+
+                EventData eventTrait(EventCondition::ON_GAIN_X, effect.secondGenericType, target);
+                Interface::eventBattleContext.enqueue(eventTrait);
+                Interface::eventBattleContext.waitForEventProcessing();
+
                 context.genericMessage.push_back(
-                    EffectMessage(EffectType::EXHIBIT, context.name, context.source, *target));
+                    EffectMessage(EffectType::EXHIBIT, context.name, &context.source, target));
             }
         }
         else
         {
             EffectMessage message =
-                EffectMessage(EffectType::BUFF, context.name, context.source, *target);
+                EffectMessage(EffectType::BUFF, context.name, &context.source, target);
             message.conditions.set(GameCondition::FAILURE_TRAITS_CANNOT_STACK);
             context.genericMessage.push_back(message);
         }
@@ -193,6 +239,10 @@ Return_Flags removeBuff(BattleContext& context, EffectComponent::PrimaryEffect& 
     for (auto& target : context.currentTargets)
     {
         target->targetConditions.clear(effect.genericType);
+
+        EventData eventLoseBuff(EventCondition::ON_LOSE_X, effect.genericType, target);
+        Interface::eventBattleContext.enqueue(eventLoseBuff);
+        Interface::eventBattleContext.waitForEventProcessing();
 
         auto& statuses = target->statuses;
         auto it = std::remove_if(statuses.begin(), statuses.end(),
@@ -208,6 +258,10 @@ Return_Flags removeDebuff(BattleContext& context, EffectComponent::PrimaryEffect
     {
         target->targetConditions.clear(effect.genericType);
 
+        EventData eventLoseDebuff(EventCondition::ON_LOSE_X, effect.genericType, target);
+        Interface::eventBattleContext.enqueue(eventLoseDebuff);
+        Interface::eventBattleContext.waitForEventProcessing();
+
         auto& statuses = target->statuses;
         auto it = std::remove_if(statuses.begin(), statuses.end(),
                                  [&effect](const std::unique_ptr<Status>& status)
@@ -222,6 +276,10 @@ Return_Flags removeExhibit(BattleContext& context, EffectComponent::PrimaryEffec
     for (auto& target : context.currentTargets)
     {
         target->traitConditions.clear(effect.secondGenericType);
+
+        EventData eventLoseTrait(EventCondition::ON_LOSE_X, effect.secondGenericType, target);
+        Interface::eventBattleContext.enqueue(eventLoseTrait);
+        Interface::eventBattleContext.waitForEventProcessing();
 
         auto& acquiredTraits = target->acquiredTraits;
         auto it = std::remove_if(acquiredTraits.begin(), acquiredTraits.end(),
@@ -281,7 +339,7 @@ Return_Flags applyStats(BattleContext& context, EffectComponent::PrimaryEffect& 
                  else
                  {
                      EffectMessage message =
-                         EffectMessage(EffectType::STATS, context.name, context.source, *c);
+                         EffectMessage(EffectType::STATS, context.name, &context.source, c);
                      message.conditions.set(GameCondition::FAILED);
                      context.genericMessage.push_back(message);
                  }
@@ -297,7 +355,7 @@ Return_Flags applyStats(BattleContext& context, EffectComponent::PrimaryEffect& 
                  else
                  {
                      EffectMessage message =
-                         EffectMessage(EffectType::STATS, context.name, context.source, *c);
+                         EffectMessage(EffectType::STATS, context.name, &context.source, c);
                      message.conditions.set(GameCondition::FAILED);
                      context.genericMessage.push_back(message);
                  }
@@ -313,7 +371,7 @@ Return_Flags applyStats(BattleContext& context, EffectComponent::PrimaryEffect& 
                  else
                  {
                      EffectMessage message =
-                         EffectMessage(EffectType::STATS, context.name, context.source, *c);
+                         EffectMessage(EffectType::STATS, context.name, &context.source, c);
                      message.conditions.set(GameCondition::FAILED);
                      context.genericMessage.push_back(message);
                  }

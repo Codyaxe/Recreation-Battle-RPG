@@ -24,6 +24,16 @@ Return_Flags Spell::cast(Game& game, Character& player)
               [](const std::unique_ptr<Component>& a, const std::unique_ptr<Component>& b)
               { return a->executionPriority < b->executionPriority; });
 
+    // Trigger On_Cast Ability
+    EventData event(EventCondition::ON_CAST, name, &player);
+    Interface::eventBattleContext.enqueue(event);
+
+    // Trigger On_Target_Cast Ability
+    EventData target_event(EventCondition::ON_TARGET_CAST, name);
+    Interface::eventBattleContext.enqueue(target_event);
+
+    Interface::eventBattleContext.waitForEventProcessing();
+
     // Execute components in order
     for (auto& component : components)
     {

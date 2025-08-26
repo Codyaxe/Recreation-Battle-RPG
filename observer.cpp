@@ -102,6 +102,13 @@ void EventObserver::processCharacterStatuses(Game& game, Character* character,
                                          [triggerEvent](const auto& condition)
                                          { return condition == triggerEvent; });
 
+        if (triggerEvent == EventCondition::ON_END_TURN)
+        {
+            status->duration -= 1;
+            EventData statusTickEvent(EventCondition::ON_STATUS_TICK, character);
+            enqueue(statusTickEvent);
+        }
+
         if (shouldTrigger)
         {
             std::cout << "Triggering status effect: " << status->name
@@ -117,6 +124,9 @@ void EventObserver::processCharacterStatuses(Game& game, Character* character,
                 Sleep(1000);
 
                 status->expire(game, character);
+                EventData statusExpiredEvent(EventCondition::ON_STATUS_EXPIRE, character);
+                enqueue(statusExpiredEvent);
+
                 it = character->statuses.erase(it);
                 continue;
             }
@@ -153,11 +163,20 @@ void EventObserver::trigger(Game& game)
 
     static const std::unordered_map<EventCondition,
                                     std::function<void(Character*, Game&, TargetCondition)>>
-        conditionEventMap = {
+        statusConditionEventMap = {
             {EventCondition::ON_GAIN_X,
              [](Character* c, Game& g, TargetCondition cond) { c->onGainX(g, cond); }},
             {EventCondition::ON_LOSE_X,
              [](Character* c, Game& g, TargetCondition cond) { c->onLoseX(g, cond); }},
+        };
+
+    static const std::unordered_map<EventCondition,
+                                    std::function<void(Character*, Game&, TraitCondition)>>
+        traitConditionEventMap = {
+            {EventCondition::ON_GAIN_X,
+             [](Character* c, Game& g, TraitCondition cond) { c->onGainX(g, cond); }},
+            {EventCondition::ON_LOSE_X,
+             [](Character* c, Game& g, TraitCondition cond) { c->onLoseX(g, cond); }},
         };
 
     static const std::unordered_map<EventCondition, std::function<void(Character*, Game&)>>
@@ -243,13 +262,28 @@ void EventObserver::trigger(Game& game)
                                   << '\n';
                     }
                 }
-                // Handle events with condition parameter
+                // Handle events with status condition parameter
                 else if (data.statusCondition != TargetCondition::NONE)
                 {
-                    auto it = conditionEventMap.find(data.type);
-                    if (it != conditionEventMap.end())
+                    auto it = statusConditionEventMap.find(data.type);
+                    if (it != statusConditionEventMap.end())
                     {
                         it->second(data.target, game, data.statusCondition);
+                        checkAllStatusEffects(game, data.type);
+                    }
+                    else
+                    {
+                        std::cerr << "ERROR! EVENT NOT FOUND C Target: "
+                                  << static_cast<int>(data.type) << '\n';
+                    }
+                }
+                // Handle events with trait condition parameter
+                else if (data.traitCondition != TraitCondition::NONE)
+                {
+                    auto it = traitConditionEventMap.find(data.type);
+                    if (it != traitConditionEventMap.end())
+                    {
+                        it->second(data.target, game, data.traitCondition);
                         checkAllStatusEffects(game, data.type);
                     }
                     else
@@ -359,11 +393,14 @@ void EventObserver::trigger(Game& game)
 
             listener.join();
 
+            if (events.empty())
             {
-                std::lock_guard<std::mutex> processLock(processMutex);
-                eventProcessed = true;
+                {
+                    std::lock_guard<std::mutex> processLock(processMutex);
+                    eventProcessed = true;
+                }
+                processCv.notify_one();
             }
-            processCv.notify_one();
         }
     }
 }

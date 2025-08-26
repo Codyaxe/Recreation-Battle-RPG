@@ -18,6 +18,16 @@ Return_Flags Summon::call(Game& game, Character& player)
               [](const std::unique_ptr<Component>& a, const std::unique_ptr<Component>& b)
               { return a->executionPriority < b->executionPriority; });
 
+    // Trigger On_Call Ability
+    EventData event(EventCondition::ON_CALL, name, &player);
+    Interface::eventBattleContext.enqueue(event);
+
+    // Trigger On_Target_Call Ability
+    EventData target_event(EventCondition::ON_TARGET_CALL, name);
+    Interface::eventBattleContext.enqueue(target_event);
+
+    Interface::eventBattleContext.waitForEventProcessing();
+
     // Execute components in order
     for (auto& component : components)
     {

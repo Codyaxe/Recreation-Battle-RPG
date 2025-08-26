@@ -36,6 +36,42 @@ struct EventData
     int amount = 0;                                          // For damage, heal, or gain/lose X
     Character* source = nullptr;                             // Viewing pointer to the source entity
     Character* target = nullptr;                             // Viewing pointer to the target entity
+
+    // For Generic Events
+    EventData(const EventCondition& type) : type(type) {}
+
+    // For Status Condition Events
+    EventData(const EventCondition& type, const TargetCondition& statusCondition, Character* source)
+        : type(type), statusCondition(statusCondition), target(target)
+    {
+    }
+
+    // For Trait Condition Events
+    EventData(const EventCondition& type, const TraitCondition& traitCondition, Character* source)
+        : type(type), traitCondition(traitCondition), target(target)
+    {
+    }
+
+    // For Non-String Events
+    EventData(const EventCondition& type, Character* source)
+        : type(type), source(source), target(target)
+    {
+    }
+
+    // For Variable Non-String Events
+    EventData(const EventCondition& type, Character* source, const int& amount)
+        : type(type), source(source), amount(amount)
+    {
+    }
+
+    // For Targeted Events
+    EventData(const EventCondition& type, const std::string& name) : type(type), name(name) {}
+
+    // For Non-Targeted Events
+    EventData(const EventCondition& type, const std::string& name, Character* source)
+        : type(type), name(name), source(source), target(target)
+    {
+    }
 };
 
 struct EffectMessage
@@ -49,12 +85,12 @@ struct EffectMessage
 
     EffectMessage() = default;
 
-    EffectMessage(EffectType tp, const std::string& n, Character& s, Character& t)
-        : type(tp), name(n), source(&s), target(&t)
+    EffectMessage(EffectType tp, const std::string& n, Character* s, Character* t)
+        : type(tp), name(n), source(s), target(t)
     {
     }
-    EffectMessage(EffectType tp, const std::string& n, int number, Character& s, Character& t)
-        : type(tp), name(n), amount(number), source(&s), target(&t)
+    EffectMessage(EffectType tp, const std::string& n, int number, Character* s, Character* t)
+        : type(tp), name(n), amount(number), source(s), target(t)
     {
     }
 };
@@ -72,6 +108,7 @@ class BattleContext
     // Gathers all available targets from game class
     std::vector<std::unique_ptr<Character>>& enemies;
     std::vector<std::unique_ptr<Character>>& allies;
+    // Viewer Pointers for selected targets
     std::vector<Character*> currentTargets;
     std::vector<int> damageDealt; // Will be removed, legacy member
 

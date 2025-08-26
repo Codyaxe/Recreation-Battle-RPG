@@ -111,6 +111,8 @@ class Character
     virtual void onHeal(Game& game) {}
     virtual void onGainX(Game& game, TargetCondition condition) {}
     virtual void onLoseX(Game& game, TargetCondition condition) {}
+    virtual void onGainX(Game& game, TraitCondition condition) {}
+    virtual void onLoseX(Game& game, TraitCondition condition) {}
     // Can add a condition X. If X happened, trigger Start and End Turn
     virtual void onCrit(Game& game) {}
     virtual void onBlock(Game& game) {}

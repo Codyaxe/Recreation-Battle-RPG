@@ -18,6 +18,16 @@ Return_Flags Attack::initiate(Game& game, Character& player)
               [](const std::unique_ptr<Component>& a, const std::unique_ptr<Component>& b)
               { return a->executionPriority < b->executionPriority; });
 
+    // Trigger On_Initiate Ability
+    EventData event(EventCondition::ON_INITIATE, name, &player);
+    Interface::eventBattleContext.enqueue(event);
+
+    // Trigger On_Target_Initiate Ability
+    EventData target_event(EventCondition::ON_TARGET_INITIATE, name);
+    Interface::eventBattleContext.enqueue(target_event);
+
+    Interface::eventBattleContext.waitForEventProcessing();
+
     // Execute components in order
     for (auto& component : components)
     {
