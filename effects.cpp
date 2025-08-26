@@ -5,6 +5,7 @@
 #include "observer.h"
 #include "technical.h"
 #include <unordered_map>
+#include <random>
 
 Return_Flags applyDamage(BattleContext& context, EffectComponent::PrimaryEffect& effect)
 {
@@ -72,9 +73,26 @@ Return_Flags applyDamage(BattleContext& context, EffectComponent::PrimaryEffect&
             damage =
                 effect.primaryValue.calculate(context, effect.primaryValue) * 2; // Super effective
         }
-        /*If Critical Hit, Do This Implementation NEEDED*/
+
+        std::random_device r;
+        std::mt19937 gen(r());
+        std::uniform_int_distribution<int> dist(0, 100);
+
+        int value = dist(gen);
+
+        if (value >= 20)
+        {
+            damage *= 2;
+            EventData critEvent(EventCondition::ON_CRIT, &context.source);
+            Interface::eventBattleContext.enqueue(critEvent);
+            Interface::eventBattleContext.waitForEventProcessing();
+        }
+
         // Stores the damage dealt for UI/Utility/Conditional purposes
         // Add Defense, Speed, Accuracy Checking
+
+        // Dodge checking
+
         context.genericMessage.push_back(
             EffectMessage(EffectType::DAMAGE, context.name, damage, &context.source, target));
         target->health -= damage;
