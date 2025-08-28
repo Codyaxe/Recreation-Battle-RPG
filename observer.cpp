@@ -138,6 +138,8 @@ void EventObserver::processCharacterStatuses(Game& game, Character* character,
 void EventObserver::trigger(Game& game)
 {
     // Event maps for different handler signatures
+    bool success = true;
+
     static const std::unordered_map<EventCondition,
                                     std::function<void(Character*, Game&, std::string_view)>>
         stringEventMap = {
@@ -252,7 +254,14 @@ void EventObserver::trigger(Game& game)
                     auto it = stringEventMap.find(data.type);
                     if (it != stringEventMap.end())
                     {
-                        it->second(data.source, game, data.name);
+                        if (data.source->onEventsAbilities.has(data.type))
+                        {
+                            it->second(data.source, game, data.name);
+                        }
+                        else
+                        {
+                            success = false;
+                        }
                         checkAllStatusEffects(game, data.type);
                     }
                     else
@@ -267,7 +276,14 @@ void EventObserver::trigger(Game& game)
                     auto it = statusConditionEventMap.find(data.type);
                     if (it != statusConditionEventMap.end())
                     {
-                        it->second(data.source, game, data.statusCondition);
+                        if (data.source->onEventsAbilities.has(data.type))
+                        {
+                            it->second(data.source, game, data.statusCondition);
+                        }
+                        else
+                        {
+                            success = false;
+                        }
                         checkAllStatusEffects(game, data.type);
                     }
                     else
@@ -282,7 +298,15 @@ void EventObserver::trigger(Game& game)
                     auto it = traitConditionEventMap.find(data.type);
                     if (it != traitConditionEventMap.end())
                     {
-                        it->second(data.source, game, data.traitCondition);
+                        if (data.source->onEventsAbilities.has(data.type))
+                        {
+                            it->second(data.source, game, data.traitCondition);
+                        }
+                        else
+                        {
+                            success = false;
+                        }
+
                         checkAllStatusEffects(game, data.type);
                     }
                     else
@@ -297,7 +321,14 @@ void EventObserver::trigger(Game& game)
                     auto it = simpleEventMap.find(data.type);
                     if (it != simpleEventMap.end())
                     {
-                        it->second(data.source, game);
+                        if (data.source->onEventsAbilities.has(data.type))
+                        {
+                            it->second(data.source, game);
+                        }
+                        else
+                        {
+                            success = false;
+                        }
                         checkAllStatusEffects(game, data.type);
                     }
                     else
@@ -377,18 +408,32 @@ void EventObserver::trigger(Game& game)
             bool shouldExit = false;
             events.pop();
 
-            std::cout << "Press Enter to continue.";
+            if (success)
+            {
+                std::cout << "Press Enter to continue." << '\n';
+            }
 
             // Skip option for status effect
             std::thread listener([&]()
                                  { processSkip(skipMutex, skipCv, skipPressed, shouldExit); });
-
+            if (success)
             {
-                // Signals exit after 5 seconds if the enter key is not pressed
-                std::unique_lock<std::mutex> lock(skipMutex);
-                skipCv.wait_for(lock, std::chrono::seconds(5),
-                                [&skipPressed] { return skipPressed; });
-                shouldExit = true;
+                {
+                    // Signals exit after 5 seconds if the enter key is not pressed
+                    std::unique_lock<std::mutex> lock(skipMutex);
+
+                    skipCv.wait_for(lock, std::chrono::seconds(5),
+                                    [&skipPressed] { return skipPressed; });
+                    shouldExit = true;
+                }
+            }
+            else
+            {
+                {
+                    std::unique_lock<std::mutex> lock(skipMutex);
+                    shouldExit = true;
+                    success = true;
+                }
             }
 
             listener.join();
