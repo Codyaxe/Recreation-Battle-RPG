@@ -242,10 +242,9 @@ void EventObserver::trigger(Game& game)
         if (!events.empty())
         {
             EventData& data = events.front();
-            events.pop();
             lock.unlock(); // Release lock early
 
-            if (data.target)
+            if (data.source)
             {
                 // Handle events with string parameter
                 if (!data.name.empty())
@@ -253,7 +252,7 @@ void EventObserver::trigger(Game& game)
                     auto it = stringEventMap.find(data.type);
                     if (it != stringEventMap.end())
                     {
-                        it->second(data.target, game, data.name);
+                        it->second(data.source, game, data.name);
                         checkAllStatusEffects(game, data.type);
                     }
                     else
@@ -268,7 +267,7 @@ void EventObserver::trigger(Game& game)
                     auto it = statusConditionEventMap.find(data.type);
                     if (it != statusConditionEventMap.end())
                     {
-                        it->second(data.target, game, data.statusCondition);
+                        it->second(data.source, game, data.statusCondition);
                         checkAllStatusEffects(game, data.type);
                     }
                     else
@@ -283,7 +282,7 @@ void EventObserver::trigger(Game& game)
                     auto it = traitConditionEventMap.find(data.type);
                     if (it != traitConditionEventMap.end())
                     {
-                        it->second(data.target, game, data.traitCondition);
+                        it->second(data.source, game, data.traitCondition);
                         checkAllStatusEffects(game, data.type);
                     }
                     else
@@ -298,7 +297,7 @@ void EventObserver::trigger(Game& game)
                     auto it = simpleEventMap.find(data.type);
                     if (it != simpleEventMap.end())
                     {
-                        it->second(data.target, game);
+                        it->second(data.source, game);
                         checkAllStatusEffects(game, data.type);
                     }
                     else
@@ -320,7 +319,7 @@ void EventObserver::trigger(Game& game)
                         {
                             if (target->onEventsAbilities.has(data.type))
                             {
-                                it->second(data.target, game, data.name);
+                                it->second(data.source, game, data.name);
                             }
                         };
 
@@ -376,6 +375,7 @@ void EventObserver::trigger(Game& game)
             std::condition_variable skipCv;
             bool skipPressed = false;
             bool shouldExit = false;
+            events.pop();
 
             std::cout << "Press Enter to continue.";
 

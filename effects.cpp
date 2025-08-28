@@ -101,6 +101,7 @@ Return_Flags applyDamage(BattleContext& context, EffectComponent::PrimaryEffect&
         Interface::eventBattleContext.enqueue(eventDealingDamage);
         EventData eventDamageTaken(EventCondition::ON_DAMAGE_TAKEN, target, damage);
         Interface::eventBattleContext.enqueue(eventDamageTaken);
+        Interface::eventBattleContext.waitForEventProcessing();
 
         if (target->health <= 0)
         {

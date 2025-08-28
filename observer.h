@@ -42,21 +42,18 @@ struct EventData
 
     // For Status Condition Events
     EventData(const EventCondition& type, const TargetCondition& statusCondition, Character* source)
-        : type(type), statusCondition(statusCondition), target(target)
+        : type(type), statusCondition(statusCondition), source(source)
     {
     }
 
     // For Trait Condition Events
     EventData(const EventCondition& type, const TraitCondition& traitCondition, Character* source)
-        : type(type), traitCondition(traitCondition), target(target)
+        : type(type), traitCondition(traitCondition), source(source)
     {
     }
 
     // For Non-String Events
-    EventData(const EventCondition& type, Character* source)
-        : type(type), source(source), target(target)
-    {
-    }
+    EventData(const EventCondition& type, Character* source) : type(type), source(source) {}
 
     // For Variable Non-String Events
     EventData(const EventCondition& type, Character* source, const int& amount)
@@ -69,7 +66,7 @@ struct EventData
 
     // For Non-Targeted Events
     EventData(const EventCondition& type, const std::string& name, Character* source)
-        : type(type), name(name), source(source), target(target)
+        : type(type), name(name), source(source)
     {
     }
 };
