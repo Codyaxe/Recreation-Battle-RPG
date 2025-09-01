@@ -16,8 +16,6 @@ class Game;
 class Status;
 class BattleContext;
 class TargetingComponent;
-
-// Forward declaration for Trait to avoid circular dependency
 class Trait;
 
 using ExtraAttributes = std::vector<std::string>;

@@ -12,8 +12,6 @@
 
 class Action;
 class Game;
-
-// Forward declaration for Action_Result from technical.h
 enum class Action_Result;
 
 class Character
